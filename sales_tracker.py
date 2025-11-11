@@ -64,6 +64,10 @@ if submitted:
 response = supabase.table("sales").select("*").order("date", desc=True).execute()
 df = pd.DataFrame(response.data) if response.data else pd.DataFrame()
 
+st.write("All loaded dates:", df['date'].dt.date.unique())
+st.write(df.head(10))
+
+
 if df.empty:
     st.info('No data yet. Add your first sale above.')
 else:
