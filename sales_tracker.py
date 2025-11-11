@@ -4,6 +4,7 @@ import sqlite3
 from datetime import datetime
 
 st.title('Daily Sales Tracker - Mannequins Ghana')
+st.markdown('<br>', unsafe_allow_html=True)
 
 DB_FILE = "sales.db"
 PAYMENT_CHOICES = [
@@ -60,16 +61,14 @@ if submitted:
     else:
         company_gets = 0.0
         rider_gets = 0.0
-    conn.execute("""
-        INSERT INTO sales (date, location, cost_of_item, delivery_fee, tip, payment_mode, company_gets, rider_gets)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        date.strftime('%Y-%m-%d'), location, cost, fee, tip, mode, company_gets, rider_gets
-    ))
+    conn.execute(
+        "INSERT INTO sales (date, location, cost_of_item, delivery_fee, tip, payment_mode, company_gets, rider_gets) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (date.strftime('%Y-%m-%d'), location, cost, fee, tip, mode, company_gets, rider_gets)
+    )
     conn.commit()
     st.success("Sale added!")
 
-# --- Fetch and filter sales: now by single date only ---
+# --- Fetch and filter sales by single date only ---
 st.header('Sales Summary & Filtering')
 df = pd.read_sql_query("SELECT * FROM sales ORDER BY date DESC", conn)
 
@@ -91,11 +90,11 @@ else:
         mask = mask & (df['payment_mode'].isin(payment_modes))
     filtered = df[mask]
 
-    # --- Capitalize display column headings & Proper Date Format ---
+    # --- Capitalize headings and format date ---
     filtered_display = filtered.copy()
     filtered_display['date'] = filtered_display['date'].dt.strftime('%a, %d/%m/%Y')
     filtered_display = filtered_display.rename(columns=lambda x: ' '.join(word.capitalize() for word in x.split('_')))
-    
+
     st.subheader('Filtered Sales and Summary')
     st.dataframe(filtered_display.reset_index(drop=True))
 
@@ -119,6 +118,7 @@ else:
         edit_row_display['date'] = edit_row_display['date'].dt.strftime('%a, %d/%m/%Y')
         edit_row_display = edit_row_display.rename(columns=lambda x: ' '.join(word.capitalize() for word in x.split('_')))
         st.dataframe(edit_row_display)
+        new_loc = st.text_input("New Location", value=str(edit_row['location'].values[0]), key='edit_loc')
         new_cost = st.number_input("New Cost of Item", min_value=0.0, value=float(edit_row['cost_of_item'].values[0]), format='%.2f', key='edit_cost')
         new_fee = st.number_input("New Delivery Fee", min_value=0.0, value=float(edit_row['delivery_fee'].values[0]), format='%.2f', key='edit_fee')
         new_tip = st.number_input("New Tip", min_value=0.0, value=float(edit_row['tip'].values[0]), format='%.2f', key='edit_tip')
@@ -137,9 +137,9 @@ else:
             rider_gets = 0.0
         if st.button("Update Record"):
             conn.execute("""
-                UPDATE sales SET cost_of_item = ?, delivery_fee = ?, tip = ?, payment_mode = ?, 
+                UPDATE sales SET location = ?, cost_of_item = ?, delivery_fee = ?, tip = ?, payment_mode = ?, 
                 company_gets = ?, rider_gets = ? WHERE id = ?
-            """, (new_cost, new_fee, new_tip, new_mode, company_gets, rider_gets, int(selected_id)))
+            """, (new_loc, new_cost, new_fee, new_tip, new_mode, company_gets, rider_gets, int(selected_id)))
             conn.commit()
             st.rerun()
         if st.button("Delete Record"):
