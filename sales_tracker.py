@@ -13,7 +13,7 @@ st.markdown('<br>', unsafe_allow_html=True)
 
 PAYMENT_CHOICES = [
     'All to Company (MoMo/Bank)',
-    'All to Rider',
+    'All to Rider (Cash)',
     'Split: Item to Company, Delivery+Tip to Rider'
 ]
 
@@ -32,7 +32,7 @@ if submitted:
     if mode == 'All to Company (MoMo/Bank)':
         company_gets = 0.0
         rider_gets = fee + tip
-    elif mode == 'All to Rider':
+    elif mode == 'All to Rider (Cash)':
         company_gets = cost
         rider_gets = 0.0
     elif mode == 'Split: Item to Company, Delivery+Tip to Rider':
