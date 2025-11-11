@@ -64,18 +64,37 @@ if submitted:
 response = supabase.table("sales").select("*").order("date", desc=True).execute()
 df = pd.DataFrame(response.data) if response.data else pd.DataFrame()
 
-if df.empty:
-    st.info('No data yet. Add your first sale above.')
+# --- CLEAN AND DEBUG: Parse dates & float columns ---
+if not df.empty:
+    # Parse dates robustly
+    df['date'] = pd.to_datetime(df['date'], errors='coerce', infer_datetime_format=True)
+
+    # Parse money columns as floats (not strings)
+    money_cols = ['cost_of_item', 'delivery_fee', 'tip', 'company_gets', 'rider_gets']
+    for col in money_cols:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
+
+    # For debugging: print first 10 rows and unique dates
+    st.write("Loaded sales data (first 10 rows):", df.head(10))
+    st.write("Unique dates in data:", df['date'].dropna().dt.date.unique())
 else:
+    st.info('No data yet. Add your first sale above.')
+
+# --- SIDEBAR FILTERS ---
+if not df.empty:
     st.sidebar.header('Filter')
-    df['date'] = pd.to_datetime(df['date'], errors='coerce')
-    unique_dates = df['date'].dt.date.unique()
+    unique_dates = df['date'].dropna().dt.date.unique()
     default_date = unique_dates[0] if len(unique_dates) else datetime.now().date()
     filter_date = st.sidebar.date_input('Filter by date', default_date)
     locations = st.sidebar.multiselect('Locations', sorted(df['location'].dropna().unique()), default=None)
     payment_modes = st.sidebar.multiselect('Payment Mode', PAYMENT_CHOICES, default=None)
-    
-    mask = (df['date'].dt.date == filter_date)
+
+    # Add a 'Show all dates' checkbox for debugging
+    show_all = st.sidebar.checkbox("Show all dates", False)
+    if show_all:
+        mask = pd.Series([True] * len(df))
+    else:
+        mask = (df['date'].dt.date == filter_date)
     if locations:
         mask &= df['location'].isin(locations)
     if payment_modes:
@@ -83,19 +102,21 @@ else:
     filtered = df[mask]
 
     filtered_display = filtered.copy()
-    filtered_display['date'] = filtered_display['date'].dt.strftime('%a, %d/%m/%Y')
-    filtered_display = filtered_display.rename(columns=lambda x: ' '.join(word.capitalize() for word in x.split('_')))
+    if not filtered_display.empty:
+        filtered_display['date'] = filtered_display['date'].dt.strftime('%a, %d/%m/%Y')
+        filtered_display = filtered_display.rename(columns=lambda x: ' '.join(word.capitalize() for word in x.split('_')))
+        st.subheader('Filtered Sales and Summary')
+        st.dataframe(filtered_display.reset_index(drop=True))
 
-    st.subheader('Filtered Sales and Summary')
-    st.dataframe(filtered_display.reset_index(drop=True))
-
-    st.subheader('Summary Statistics')
-    col_sum1, col_sum2, col_sum3, col_sum4, col_sum5 = st.columns(5)
-    col_sum1.metric('Total Delivery Fees', f"{filtered['delivery_fee'].sum():.2f}")
-    col_sum2.metric('Total Item Cost', f"{filtered['cost_of_item'].sum():.2f}")
-    col_sum3.metric('Total Tips', f"{filtered['tip'].sum():.2f}")
-    col_sum4.metric('Total Owed To Company', f"{filtered['company_gets'].sum():.2f}")
-    col_sum5.metric('Total Owed To Rider', f"{filtered['rider_gets'].sum():.2f}")
+        st.subheader('Summary Statistics')
+        col_sum1, col_sum2, col_sum3, col_sum4, col_sum5 = st.columns(5)
+        col_sum1.metric('Total Delivery Fees', f"₵{filtered['delivery_fee'].sum():.2f}")
+        col_sum2.metric('Total Item Cost', f"₵{filtered['cost_of_item'].sum():.2f}")
+        col_sum3.metric('Total Tips', f"₵{filtered['tip'].sum():.2f}")
+        col_sum4.metric('Total Owed To Company', f"₵{filtered['company_gets'].sum():.2f}")
+        col_sum5.metric('Total Owed To Rider', f"₵{filtered['rider_gets'].sum():.2f}")
+    else:
+        st.warning("No records for selected filter combination.")
 
     # --- Edit/delete section ---
     st.subheader("Edit or Delete a Sale Record")
@@ -113,12 +134,19 @@ else:
         new_cost = st.number_input("New Cost of Item", min_value=0.0, value=float(edit_row['cost_of_item'].values[0]), format='%.2f', key='edit_cost')
         new_fee = st.number_input("New Delivery Fee", min_value=0.0, value=float(edit_row['delivery_fee'].values[0]), format='%.2f', key='edit_fee')
         new_tip = st.number_input("New Tip", min_value=0.0, value=float(edit_row['tip'].values[0]), format='%.2f', key='edit_tip')
-        new_mode = st.selectbox("New Payment Mode", PAYMENT_CHOICES, index=PAYMENT_CHOICES.index(edit_row['payment_mode'].values[0]), key='edit_mode')
+
+        # Defensive selectbox index
+        selected_mode = edit_row['payment_mode'].values[0]
+        if selected_mode in PAYMENT_CHOICES:
+            default_index = PAYMENT_CHOICES.index(selected_mode)
+        else:
+            default_index = 0  # Default to first choice if not matched
+        new_mode = st.selectbox("New Payment Mode", PAYMENT_CHOICES, index=default_index, key='edit_mode')
 
         if new_mode == 'All to Company (MoMo/Bank)':
             company_gets = 0.0
             rider_gets = new_fee + new_tip
-        elif new_mode == 'All to Rider':
+        elif new_mode == 'All to Rider (Cash)':
             company_gets = new_cost
             rider_gets = 0.0
         elif new_mode == 'Split: Item to Company, Delivery+Tip to Rider':
