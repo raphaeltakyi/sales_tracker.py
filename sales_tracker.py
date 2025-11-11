@@ -53,11 +53,12 @@ if submitted:
         "rider_gets": rider_gets
     }
     response = supabase.table("sales").insert(data).execute()
+
     if response.data:
         st.success("Sale added!")
     else:
         st.error("Failed to add sale.")
-        st.write(response)
+        st.write(response)  # Optional for debugging
 
 # --- Fetch all sales ---
 response = supabase.table("sales").select("*").order("date", desc=True).execute()
@@ -67,21 +68,20 @@ if df.empty:
     st.info('No data yet. Add your first sale above.')
 else:
     st.sidebar.header('Filter')
+    # Parse 'date' as datetime
     df['date'] = pd.to_datetime(df['date'], errors='coerce')
+    # Ensure numeric columns are float
     for col in ['cost_of_item', 'delivery_fee', 'tip', 'company_gets', 'rider_gets']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    # Date range filter (duration)
-    min_date = df['date'].min().date()
-    max_date = df['date'].max().date()
-    start_date, end_date = st.sidebar.date_input(
-        "Select date range", [min_date, max_date], min_value=min_date, max_value=max_date
-    )
-
+    # Show only dates actually present in the data
+    unique_dates = sorted(df['date'].dt.date.dropna().unique())
+    filter_date = st.sidebar.selectbox('Filter by date', unique_dates)
     locations = st.sidebar.multiselect('Locations', sorted(df['location'].dropna().unique()), default=None)
     payment_modes = st.sidebar.multiselect('Payment Mode', PAYMENT_CHOICES, default=None)
 
-    mask = (df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)
+    # Filtering logic
+    mask = (df['date'].dt.date == filter_date)
     if locations:
         mask &= df['location'].isin(locations)
     if payment_modes:
