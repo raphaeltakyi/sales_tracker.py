@@ -141,7 +141,7 @@ else:
             response = supabase.table("sales").update(update_data).eq("id", int(selected_id)).execute()
             if response.data:
                 st.success("Record updated!")
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Failed to update record.")
                 st.write(response)
@@ -150,7 +150,7 @@ else:
             response = supabase.table("sales").delete().eq("id", int(selected_id)).execute()
             if response.data:
                 st.success("Record deleted!")
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Failed to delete record.")
                 st.write(response)
