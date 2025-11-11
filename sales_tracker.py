@@ -54,10 +54,10 @@ if submitted:
     }
     response = supabase.table("sales").insert(data).execute()
 
-    if response.status_code == 201:
+    if response.error is None:
         st.success("Sale added!")
     else:
-        st.error("Failed to add sale.")
+        st.error(f"Failed to add sale: {response.error.message}")
 
 # --- Fetch all sales ---
 response = supabase.table("sales").select("*").order("date", desc=True).execute()
@@ -137,13 +137,19 @@ else:
                 "company_gets": company_gets,
                 "rider_gets": rider_gets
             }
-            supabase.table("sales").update(update_data).eq("id", int(selected_id)).execute()
-            st.success("Record updated!")
-            st.experimental_rerun()
+            response = supabase.table("sales").update(update_data).eq("id", int(selected_id)).execute()
+            if response.error is None:
+                st.success("Record updated!")
+                st.experimental_rerun()
+            else:
+                st.error(f"Failed to update record: {response.error.message}")
 
         if st.button("Delete Record"):
-            supabase.table("sales").delete().eq("id", int(selected_id)).execute()
-            st.success("Record deleted!")
-            st.experimental_rerun()
+            response = supabase.table("sales").delete().eq("id", int(selected_id)).execute()
+            if response.error is None:
+                st.success("Record deleted!")
+                st.experimental_rerun()
+            else:
+                st.error(f"Failed to delete record: {response.error.message}")
     else:
         st.info("Enter a valid Sale ID to edit or delete.")
