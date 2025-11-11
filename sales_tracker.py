@@ -74,19 +74,27 @@ else:
     for col in ['cost_of_item', 'delivery_fee', 'tip', 'company_gets', 'rider_gets']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    # Show only dates actually present in the data
-    unique_dates = sorted(df['date'].dt.date.dropna().unique())
-    filter_date = st.sidebar.selectbox('Filter by date', unique_dates)
+    # Date range filter
+    min_date = df['date'].min().date()
+    max_date = df['date'].max().date()
+    start_date = st.sidebar.date_input('Start Date', min_date, min_value=min_date, max_value=max_date)
+    end_date = st.sidebar.date_input('End Date', max_date, min_value=min_date, max_value=max_date)
+
+    # Other filters
     locations = st.sidebar.multiselect('Locations', sorted(df['location'].dropna().unique()), default=None)
     payment_modes = st.sidebar.multiselect('Payment Mode', PAYMENT_CHOICES, default=None)
 
-    # Filtering logic
-    mask = (df['date'].dt.date == filter_date)
-    if locations:
-        mask &= df['location'].isin(locations)
-    if payment_modes:
-        mask &= df['payment_mode'].isin(payment_modes)
-    filtered = df[mask]
+    # Filter logic
+    if start_date > end_date:
+        st.sidebar.error('Start Date must be before or equal to End Date.')
+        filtered = pd.DataFrame()
+    else:
+        mask = (df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)
+        if locations:
+            mask &= df['location'].isin(locations)
+        if payment_modes:
+            mask &= df['payment_mode'].isin(payment_modes)
+        filtered = df[mask]
 
     filtered_display = filtered.copy()
     if not filtered_display.empty:
