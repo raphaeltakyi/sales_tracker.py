@@ -74,28 +74,35 @@ else:
     for col in ['cost_of_item', 'delivery_fee', 'tip', 'company_gets', 'rider_gets']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    # Date range filter
-    min_date = df['date'].min().date()
-    max_date = df['date'].max().date()
-    start_date = st.sidebar.date_input('Start Date', min_date, min_value=min_date, max_value=max_date)
-    end_date = st.sidebar.date_input('End Date', max_date, min_value=min_date, max_value=max_date)
+    # Date range filter using pd.to_datetime for robust filtering
+    min_date = df['date'].min()
+    max_date = df['date'].max()
+    if pd.isnull(min_date) or pd.isnull(max_date):
+        # Fallback for missing dates
+        min_date = datetime.now()
+        max_date = datetime.now()
+    start_date = st.sidebar.date_input('Start Date', min_date.date(), min_value=min_date.date(), max_value=max_date.date())
+    end_date = st.sidebar.date_input('End Date', max_date.date(), min_value=min_date.date(), max_value=max_date.date())
 
     # Other filters
     locations = st.sidebar.multiselect('Locations', sorted(df['location'].dropna().unique()), default=None)
     payment_modes = st.sidebar.multiselect('Payment Mode', PAYMENT_CHOICES, default=None)
 
-    # Filter logic
+    # Filter logic with improved date mask (pd.to_datetime for both sides)
     if start_date > end_date:
         st.sidebar.error('Start Date must be before or equal to End Date.')
         filtered = pd.DataFrame()
     else:
-        mask = (df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)
+        mask = (df['date'] >= pd.to_datetime(start_date)) & (df['date'] <= pd.to_datetime(end_date))
         if locations:
             mask &= df['location'].isin(locations)
         if payment_modes:
             mask &= df['payment_mode'].isin(payment_modes)
         filtered = df[mask]
 
+    # Optional: Debug unique dates
+    # st.write("All unique dates:", df['date'].dt.date.unique())
+    
     filtered_display = filtered.copy()
     if not filtered_display.empty:
         filtered_display['date'] = filtered_display['date'].dt.strftime('%a, %d/%m/%Y')
