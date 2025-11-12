@@ -68,14 +68,15 @@ if df.empty:
     st.info('No data yet. Add your first sale above.')
 else:
     st.sidebar.header('Filter')
-    # Parse 'date' as datetime
-    df['date'] = pd.to_datetime(df['date'], errors='coerce')
+    # Parse all 'date' entries robustly and normalize to midnight to include all present dates
+    df['date'] = pd.to_datetime(df['date'], errors='coerce').dt.normalize()
     # Ensure numeric columns are float
     for col in ['cost_of_item', 'delivery_fee', 'tip', 'company_gets', 'rider_gets']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
     # --- Date range filter using only dates present in data ---
-    unique_dates = sorted(df['date'].dt.date.dropna().unique())
+    unique_dates = sorted(df['date'].dt.date.unique())
+    st.write('Available dates:', unique_dates)  # Debug: Show all actual dates for verification
     if unique_dates:
         start_date, end_date = st.sidebar.select_slider(
             'Select Date Range',
