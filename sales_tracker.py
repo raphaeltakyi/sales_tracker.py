@@ -75,12 +75,18 @@ else:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
     # --- Date range filter using only dates present in data ---
-    unique_dates = sorted(df['date'].dt.date.dropna().unique())
+    # Convert all dates to date objects, sort ascending
+    unique_dates = sorted(set(date.date() for date in df['date'].dropna()))
+    # Debug: show order in sidebar
+    st.sidebar.write("Dates for slider:", unique_dates)
+
     if unique_dates:
+        # Use select_slider with friendly formatted date labels
         start_date, end_date = st.sidebar.select_slider(
             'Select Date Range',
             options=unique_dates,
-            value=(unique_dates[0], unique_dates[-1])
+            value=(unique_dates[0], unique_dates[-1]),
+            format_func=lambda d: d.strftime('%a, %d/%m/%Y')
         )
     else:
         start_date, end_date = None, None
