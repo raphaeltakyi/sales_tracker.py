@@ -74,31 +74,28 @@ else:
     for col in ['cost_of_item', 'delivery_fee', 'tip', 'company_gets', 'rider_gets']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    # --- Date range filter using only dates present in data ---
-    unique_dates = sorted(df['date'].dt.date.dropna().unique())
-    if unique_dates:
-        start_date, end_date = st.sidebar.select_slider(
-            'Select Date Range',
-            options=unique_dates,
-            value=(unique_dates[0], unique_dates[-1])
-        )
+    # --- Date range filter using st.sidebar.date_input for date range ---
+    min_date = df['date'].min().date()
+    max_date = df['date'].max().date()
+    date_range = st.sidebar.date_input(
+        "Select Date Range", value=(min_date, max_date), min_value=min_date, max_value=max_date
+    )
+    if isinstance(date_range, tuple) and len(date_range) == 2:
+        start_date, end_date = date_range
     else:
-        start_date, end_date = None, None
+        start_date, end_date = min_date, max_date
 
     # Other filters
     locations = st.sidebar.multiselect('Locations', sorted(df['location'].dropna().unique()), default=None)
     payment_modes = st.sidebar.multiselect('Payment Mode', PAYMENT_CHOICES, default=None)
 
-    # Filter logic using only dates available in data
-    if start_date and end_date:
-        mask = (df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)
-        if locations:
-            mask &= df['location'].isin(locations)
-        if payment_modes:
-            mask &= df['payment_mode'].isin(payment_modes)
-        filtered = df[mask]
-    else:
-        filtered = pd.DataFrame()
+    # Filter logic using date range
+    mask = (df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)
+    if locations:
+        mask &= df['location'].isin(locations)
+    if payment_modes:
+        mask &= df['payment_mode'].isin(payment_modes)
+    filtered = df[mask]
 
     filtered_display = filtered.copy()
     if not filtered_display.empty:
