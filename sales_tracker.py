@@ -74,14 +74,12 @@ else:
     for col in ['cost_of_item', 'delivery_fee', 'tip', 'company_gets', 'rider_gets']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    # --- Date range filter using only dates present in data ---
-    # Convert all dates to date objects, sort ascending
-    unique_dates = sorted(set(date.date() for date in df['date'].dropna()))
-    # Debug: show order in sidebar
-    st.sidebar.write("Dates for slider:", unique_dates)
+    # --- Date range filter using only dates present in data (GUARANTEED CHRONOLOGICAL ORDER) ---
+    all_dates = pd.to_datetime(df['date'], errors='coerce').dt.date.dropna().tolist()
+    unique_dates = sorted(set(all_dates), key=lambda x: (x.year, x.month, x.day))
+    st.sidebar.write("Dates for slider:", unique_dates)  # Debug: May safely remove once confirmed fixed
 
     if unique_dates:
-        # Use select_slider with friendly formatted date labels
         start_date, end_date = st.sidebar.select_slider(
             'Select Date Range',
             options=unique_dates,
