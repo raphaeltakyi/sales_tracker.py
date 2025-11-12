@@ -1,7 +1,22 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, date
 from supabase import create_client, Client
+
+# --- Utility: guaranteed Python date conversion
+def to_py_date(x):
+    if isinstance(x, date):
+        return x
+    elif pd.isnull(x):
+        return None
+    elif isinstance(x, pd.Timestamp):
+        return x.date()
+    elif isinstance(x, str):
+        try:
+            return pd.to_datetime(x, errors='coerce').date()
+        except:
+            return None
+    return None
 
 # Initialize Supabase client
 url = st.secrets["SUPABASE_URL"]
@@ -20,7 +35,7 @@ PAYMENT_CHOICES = [
 # --- Add a sale form ---
 with st.form("sale_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
-    date = col1.date_input("Date", datetime.now())
+    date_val = col1.date_input("Date", datetime.now())
     location = col1.text_input("Location")
     cost = col2.number_input("Cost of Item", min_value=0.0, format='%.2f')
     fee = col2.number_input("Delivery Fee", min_value=0.0, format='%.2f')
@@ -43,7 +58,7 @@ if submitted:
         rider_gets = 0.0
 
     data = {
-        "date": date.strftime('%Y-%m-%d'),
+        "date": date_val.strftime('%Y-%m-%d'),
         "location": location,
         "cost_of_item": cost,
         "delivery_fee": fee,
@@ -58,7 +73,7 @@ if submitted:
         st.success("Sale added!")
     else:
         st.error("Failed to add sale.")
-        st.write(response)  # Optional for debugging
+        st.write(response)  # For debugging
 
 # --- Fetch all sales ---
 response = supabase.table("sales").select("*").order("date", desc=True).execute()
@@ -68,16 +83,18 @@ if df.empty:
     st.info('No data yet. Add your first sale above.')
 else:
     st.sidebar.header('Filter')
-    # Parse 'date' as datetime
+    # Parse 'date' as datetime and force all to date object
     df['date'] = pd.to_datetime(df['date'], errors='coerce')
-    # Ensure numeric columns are float
+    # Prevent non-numeric values in number columns
     for col in ['cost_of_item', 'delivery_fee', 'tip', 'company_gets', 'rider_gets']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    # --- Date range filter using only dates present in data (GUARANTEED CHRONOLOGICAL ORDER) ---
-    all_dates = pd.to_datetime(df['date'], errors='coerce').dt.date.dropna().tolist()
-    unique_dates = sorted(set(all_dates), key=lambda x: (x.year, x.month, x.day))
-    st.sidebar.write("Dates for slider:", unique_dates)  # Debug: May safely remove once confirmed fixed
+    # --- Date range filter using only dates present in data, strictly ordered ---
+    all_dates = [to_py_date(x) for x in df['date'].dropna()]
+    unique_dates = sorted({d for d in all_dates if d is not None}, key=lambda x: (x.year, x.month, x.day))
+    # Debug: check both order and types
+    st.sidebar.write("Dates for slider:", unique_dates)
+    st.sidebar.write([type(d) for d in unique_dates])
 
     if unique_dates:
         start_date, end_date = st.sidebar.select_slider(
@@ -93,7 +110,7 @@ else:
     locations = st.sidebar.multiselect('Locations', sorted(df['location'].dropna().unique()), default=None)
     payment_modes = st.sidebar.multiselect('Payment Mode', PAYMENT_CHOICES, default=None)
 
-    # Filter logic using only dates available in data
+    # Filtering logic
     if start_date and end_date:
         mask = (df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)
         if locations:
