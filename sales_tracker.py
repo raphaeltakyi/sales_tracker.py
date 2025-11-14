@@ -3,11 +3,12 @@ import pandas as pd
 from datetime import datetime
 from supabase import create_client, Client
 
-# Initialize Supabase client via secrets
+# --- Initialize Supabase client securely via secrets
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
 
+# --- App title and subtitle
 st.markdown(
     """
     <h1 style='text-align:center; color:#4B6EAF; font-weight:700; font-family: Arial, sans-serif;'>
@@ -79,7 +80,7 @@ if add_submitted:
                 st.session_state["confirm_add"] = True
                 st.experimental_rerun()
 
-# --- Fetch all sales for display and filter ---
+# --- Fetch all sales records for display and filtering ---
 response = supabase.table("sales").select("*").order("date", desc=True).execute()
 df = pd.DataFrame(response.data) if response.data else pd.DataFrame()
 
@@ -96,21 +97,23 @@ else:
     unique_dates = sorted(df['date'].dt.date.dropna().unique())
     min_date = unique_dates[0]
     max_date = unique_dates[-1]
-
     start_date, end_date = st.sidebar.select_slider(
         "Select Date Range",
         options=unique_dates,
         value=(min_date, max_date),
         help="Filter sales within this date range"
     )
-
-    st.sidebar.markdown(f"**Selected Range:** {start_date.strftime('%d/%m/%Y')} &ndash; {end_date.strftime('%d/%m/%Y')}")
+    st.sidebar.markdown(
+        f"**Selected Range:** {start_date.strftime('%d/%m/%Y')} &ndash; {end_date.strftime('%d/%m/%Y')}"
+    )
 
     # --- Other filters ---
     locations = st.sidebar.multiselect(
-        "Locations", options=sorted(df['location'].dropna().unique()), default=None)
+        "Locations", options=sorted(df['location'].dropna().unique()), default=None
+    )
     payment_modes = st.sidebar.multiselect(
-        "Payment Modes", options=PAYMENT_CHOICES, default=None)
+        "Payment Modes", options=PAYMENT_CHOICES, default=None
+    )
 
     mask = pd.Series(True, index=df.index)
     mask &= (df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)
@@ -126,7 +129,9 @@ else:
     else:
         display_df = filtered.copy()
         display_df['date'] = display_df['date'].dt.strftime('%a, %d/%m/%Y')
-        display_df = display_df.rename(columns=lambda s: ' '.join(word.capitalize() for word in s.split('_')))
+        display_df = display_df.rename(
+            columns=lambda s: ' '.join(word.capitalize() for word in s.split('_'))
+        )
         st.subheader("Filtered Sales Records")
         st.dataframe(display_df.reset_index(drop=True), use_container_width=True)
 
@@ -149,13 +154,19 @@ else:
         for col, (name, value) in zip(cols, sums.items()):
             col.metric(label=name, value=format_currency_no_trailing(value))
 
-    # --- Toggle section: Edit/Delete Record (main page, beside heading!)
+    # --- Expander (collapsible) section for Edit/Delete on main page ---
     st.divider()
-    col_toggle, col_head = st.columns([1, 9])
-    show_edit_delete = col_toggle.toggle("Show", value=False)
-    col_head.header("Edit or Delete a Sale Record")
-    
-    if show_edit_delete:
+    col_head, col_expander = st.columns([9, 1])
+    with col_head:
+        st.markdown(
+            "<h2 style='display: inline; vertical-align: middle;'>Edit or Delete a Sale Record</h2>",
+            unsafe_allow_html=True,
+        )
+    with col_expander:
+        pass  # Used only for right alignment of the expander.
+
+    # Show/hide the edit/delete section using expander (arrow appears on right by default)
+    with st.expander("", expanded=False):
         selected_id = st.number_input(
             "Enter Sale ID to Edit/Delete",
             min_value=1,
@@ -169,13 +180,24 @@ else:
             st.write("Selected Record:")
             display_row = edit_row.copy()
             display_row['date'] = display_row['date'].dt.strftime('%a, %d/%m/%Y')
-            display_row = display_row.rename(columns=lambda s: ' '.join(word.capitalize() for word in s.split('_')))
+            display_row = display_row.rename(
+                columns=lambda s: ' '.join(word.capitalize() for word in s.split('_'))
+            )
             st.dataframe(display_row, use_container_width=True)
 
             new_loc = st.text_input("New Location", value=str(edit_row['location'].values[0]), key='edit_loc')
-            new_cost = st.number_input("New Cost of Item (₵)", min_value=0.0, value=float(edit_row['cost_of_item'].values[0]), format='%.2f', step=0.01, key='edit_cost')
-            new_fee = st.number_input("New Delivery Fee (₵)", min_value=0.0, value=float(edit_row['delivery_fee'].values[0]), format='%.2f', step=0.01, key='edit_fee')
-            new_tip = st.number_input("New Tip (₵)", min_value=0.0, value=float(edit_row['tip'].values[0]), format='%.2f', step=0.01, key='edit_tip')
+            new_cost = st.number_input(
+                "New Cost of Item (₵)", min_value=0.0, value=float(edit_row['cost_of_item'].values[0]),
+                format='%.2f', step=0.01, key='edit_cost'
+            )
+            new_fee = st.number_input(
+                "New Delivery Fee (₵)", min_value=0.0, value=float(edit_row['delivery_fee'].values[0]),
+                format='%.2f', step=0.01, key='edit_fee'
+            )
+            new_tip = st.number_input(
+                "New Tip (₵)", min_value=0.0, value=float(edit_row['tip'].values[0]),
+                format='%.2f', step=0.01, key='edit_tip'
+            )
             selected_mode = edit_row['payment_mode'].values[0]
             default_index = PAYMENT_CHOICES.index(selected_mode) if selected_mode in PAYMENT_CHOICES else 0
             new_mode = st.selectbox("New Payment Mode", PAYMENT_CHOICES, index=default_index, key='edit_mode')
@@ -191,7 +213,6 @@ else:
                 rider_gets = new_fee + new_tip
 
             col_edit, col_delete = st.columns(2)
-            # --- Confirmation prompt for updating a record ---
             with col_edit:
                 if st.button("Update Record"):
                     st.session_state["pending_update"] = True
@@ -214,7 +235,6 @@ else:
                         else:
                             st.error("Failed to update record.")
                             st.json(response)
-            # --- Confirmation prompt for deleting a record ---
             with col_delete:
                 if st.button("Delete Record", type="secondary"):
                     st.session_state["pending_delete"] = True
