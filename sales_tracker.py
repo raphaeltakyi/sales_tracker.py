@@ -8,7 +8,7 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
 
-# App title and subtitle
+# App title with a subtitle for clarity
 st.markdown(
     """
     <h1 style='text-align:center; color:#4B6EAF; font-weight:700; font-family: Arial, sans-serif;'>
@@ -85,91 +85,78 @@ else:
 
     st.sidebar.header("Filters")
 
-    # --- Robust Quick Select + Date Filter ---
+    # --- Robust Quick Select + Slider ---
     unique_dates = sorted(df['date'].dt.date.dropna().unique())
-    min_date = min(unique_dates)
-    max_date = max(unique_dates)
+    min_date, max_date = unique_dates[0], unique_dates[-1]
 
-    def quick_range(option):
+    def get_preset_dates(preset):
         today = datetime.now().date()
-        if option == "Today":
+        if preset == "Today":
             d0 = d1 = today
             if d0 < min_date or d0 > max_date:
                 d0 = d1 = max_date
-        elif option == "This Week":
-            this_monday = today - timedelta(days=today.weekday())
-            d0 = max(this_monday, min_date)
+        elif preset == "This Week":
+            week_start = today - timedelta(days=today.weekday())
+            d0 = max(week_start, min_date)
             d1 = min(today, max_date)
-        elif option == "This Month":
-            mstart = today.replace(day=1)
-            d0 = max(mstart, min_date)
+        elif preset == "This Month":
+            month_start = today.replace(day=1)
+            d0 = max(month_start, min_date)
             d1 = min(today, max_date)
         else:  # "All Time"
-            d0 = min_date
-            d1 = max_date
-        return d0, d1
+            d0, d1 = min_date, max_date
+        return (d0, d1)
 
-    quick_labels = ["Today", "This Week", "This Month", "All Time"]
+    quick_options = ["Today", "This Week", "This Month", "All Time"]
     st.sidebar.subheader("Date Range Preset")
-    preset = st.sidebar.selectbox("Quick Select", quick_labels, index=3)
-    start_preset, end_preset = quick_range(preset)
+    quick_select = st.sidebar.selectbox("Quick Select", quick_options, index=3)
+    qstart, qend = get_preset_dates(quick_select)
 
-    selected_range = st.sidebar.date_input(
-        "Or Select Date Range (dd/mm/yyyy)",
-        value=(start_preset, end_preset),
-        min_value=min_date,
-        max_value=max_date,
-        format="DD/MM/YYYY"
+    # --- Date slider; it can be changed after quick select ---
+    start_date, end_date = st.sidebar.select_slider(
+        "Select Date Range",
+        options=unique_dates,
+        value=(qstart, qend),
+        help="Filter sales within this date range"
     )
-    # Safe selection of range
-    if isinstance(selected_range, tuple):
-        if len(selected_range) == 2:
-            start_date, end_date = selected_range
-        elif len(selected_range) == 1:
-            start_date = end_date = selected_range[0]
-        else:
-            start_date = end_date = min_date
-    else:
-        start_date = end_date = selected_range
-    if start_date > end_date:
-        start_date, end_date = end_date, start_date
-    start_date = max(start_date, min_date)
-    end_date = min(end_date, max_date)
+
+    # Show current range in dd/mm/yyyy
     st.sidebar.markdown(f"**Selected Range:** {start_date.strftime('%d/%m/%Y')} &ndash; {end_date.strftime('%d/%m/%Y')}")
 
+    # --- Other filters ---
     locations = st.sidebar.multiselect(
         "Locations", options=sorted(df['location'].dropna().unique()), default=None)
     payment_modes = st.sidebar.multiselect(
         "Payment Modes", options=PAYMENT_CHOICES, default=None)
 
+    # --- Apply filters ---
     mask = pd.Series(True, index=df.index)
     mask &= (df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)
     if locations:
         mask &= df['location'].isin(locations)
     if payment_modes:
         mask &= df['payment_mode'].isin(payment_modes)
+
     filtered = df[mask]
 
     if filtered.empty:
         st.warning("No records match the selected filter criteria.")
     else:
         display_df = filtered.copy()
-        display_df['date'] = display_df['date'].dt.strftime('%d/%m/%Y')
+        display_df['date'] = display_df['date'].dt.strftime('%a, %d/%m/%Y')
         display_df = display_df.rename(columns=lambda s: ' '.join(word.capitalize() for word in s.split('_')))
         st.subheader("Filtered Sales Records")
         st.dataframe(display_df.reset_index(drop=True), use_container_width=True)
 
         st.subheader("Summary Statistics")
-        # Show all amounts on summary page, including total sale value
-        total_amount = filtered['cost_of_item'].sum() + filtered['delivery_fee'].sum() + filtered['tip'].sum()
         sums = {
             'Total Delivery Fees (₵)': filtered['delivery_fee'].sum(),
             'Total Item Cost (₵)': filtered['cost_of_item'].sum(),
             'Total Tips (₵)': filtered['tip'].sum(),
             'Total Owed To Company (₵)': filtered['company_gets'].sum(),
             'Total Owed To Rider (₵)': filtered['rider_gets'].sum(),
-            'Total Amount (₵)': total_amount
         }
+
         cols = st.columns(len(sums))
         for col, (name, value) in zip(cols, sums.items()):
             col.metric(label=name, value=f"{value:.2f}")
@@ -177,18 +164,20 @@ else:
 # --- Edit/Delete Section ---
 st.divider()
 st.header("Edit or Delete a Sale Record")
+
 selected_id = st.number_input(
     "Enter Sale ID to Edit/Delete",
     min_value=1,
     step=1,
     help="Find the sale ID from the filtered sales table above"
 )
+
 edit_row = df[df['id'] == selected_id]
 
 if not edit_row.empty:
     st.write("Selected Record:")
     display_row = edit_row.copy()
-    display_row['date'] = display_row['date'].dt.strftime('%d/%m/%Y')
+    display_row['date'] = display_row['date'].dt.strftime('%a, %d/%m/%Y')
     display_row = display_row.rename(columns=lambda s: ' '.join(word.capitalize() for word in s.split('_')))
     st.dataframe(display_row, use_container_width=True)
 
@@ -239,4 +228,4 @@ if not edit_row.empty:
                 st.error("Failed to delete record.")
                 st.json(response)
 else:
-    st.info("Enter a valid Sale ID from the table above to edit or delete a record.")
+    st.info("Enter a valid Sale ID from the filtered table above to edit or delete a record.")
