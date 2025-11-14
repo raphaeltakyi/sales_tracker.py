@@ -111,7 +111,6 @@ else:
     quick_select = st.sidebar.selectbox("Quick Select", quick_options, index=3)
     preset_start, preset_end = get_preset_dates(quick_select)
 
-    # --- Date Slider for filtering
     start_date, end_date = st.sidebar.select_slider(
         "Select Date Range",
         options=unique_dates,
@@ -157,9 +156,9 @@ else:
         def format_currency_no_trailing(value):
             # Show comma separators, and drop decimals if .00
             if float(value).is_integer():
-                return f"{int(value):,} ₵"
+                return f"₵{int(value):,}"
             else:
-                return f"{value:,.2f} ₵"
+                return f"₵{value:,.2f}"
 
         cols = st.columns(len(sums))
         for col, (name, value) in zip(cols, sums.items()):
