@@ -87,40 +87,42 @@ else:
 
     # --- Robust Quick Select + Slider ---
     unique_dates = sorted(df['date'].dt.date.dropna().unique())
-    min_date, max_date = unique_dates[0], unique_dates[-1]
+    min_date = unique_dates[0]
+    max_date = unique_dates[-1]
+    today = datetime.now().date()
+
+    def get_flexible_end_date(d):
+        return d if d <= max_date else max_date
 
     def get_preset_dates(preset):
-        today = datetime.now().date()
+        # Start is always min_date in data!
+        start = min_date
+        # End is flexible per quick select
         if preset == "Today":
-            d0 = d1 = today
-            if d0 < min_date or d0 > max_date:
-                d0 = d1 = max_date
+            end = get_flexible_end_date(today)
         elif preset == "This Week":
-            week_start = today - timedelta(days=today.weekday())
-            d0 = max(week_start, min_date)
-            d1 = min(today, max_date)
+            week_end = today
+            end = get_flexible_end_date(week_end)
         elif preset == "This Month":
-            month_start = today.replace(day=1)
-            d0 = max(month_start, min_date)
-            d1 = min(today, max_date)
+            month_end = today
+            end = get_flexible_end_date(month_end)
         else:  # "All Time"
-            d0, d1 = min_date, max_date
-        return (d0, d1)
+            end = max_date
+        return (start, end)
 
     quick_options = ["Today", "This Week", "This Month", "All Time"]
     st.sidebar.subheader("Date Range Preset")
     quick_select = st.sidebar.selectbox("Quick Select", quick_options, index=3)
-    qstart, qend = get_preset_dates(quick_select)
+    preset_start, preset_end = get_preset_dates(quick_select)
 
-    # --- Date slider; it can be changed after quick select ---
+    # --- Date slider, always starts at min_date in data, ends as per preset (but always fits options) ---
     start_date, end_date = st.sidebar.select_slider(
         "Select Date Range",
         options=unique_dates,
-        value=(qstart, qend),
+        value=(preset_start, preset_end),
         help="Filter sales within this date range"
     )
 
-    # Show current range in dd/mm/yyyy
     st.sidebar.markdown(f"**Selected Range:** {start_date.strftime('%d/%m/%Y')} &ndash; {end_date.strftime('%d/%m/%Y')}")
 
     # --- Other filters ---
@@ -129,7 +131,6 @@ else:
     payment_modes = st.sidebar.multiselect(
         "Payment Modes", options=PAYMENT_CHOICES, default=None)
 
-    # --- Apply filters ---
     mask = pd.Series(True, index=df.index)
     mask &= (df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)
     if locations:
