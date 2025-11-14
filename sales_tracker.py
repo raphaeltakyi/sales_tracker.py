@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 from supabase import create_client, Client
 
 # Initialize Supabase client securely via secrets
@@ -33,14 +33,17 @@ PAYMENT_CHOICES = [
 with st.form("sale_form", clear_on_submit=True):
     st.header("Add a New Sale")
     col1, col2 = st.columns([3, 2], gap="medium")
+
     with col1:
         date = st.date_input("Date", value=datetime.now(), help="Select the sale date")
         location = st.text_input("Location", placeholder="Enter sale location")
+
     with col2:
         cost = st.number_input("Cost of Item (₵)", min_value=0.0, format="%.2f", step=0.01)
         fee = st.number_input("Delivery Fee (₵)", min_value=0.0, format="%.2f", step=0.01)
         tip = st.number_input("Tip (₵)", min_value=0.0, format="%.2f", step=0.01)
         mode = st.selectbox("Payment Mode", PAYMENT_CHOICES)
+
     submitted = st.form_submit_button("Add Sale")
 
 # Handle form submission with validation and data insertion
@@ -49,16 +52,17 @@ if submitted:
         st.error("Please enter a location.")
     else:
         # Compute pay distribution based on mode
-        if mode == PAYMENT_CHOICES[0]:
+        if mode == PAYMENT_CHOICES[0]:  # All to Company
             company_gets = cost + fee + tip
             rider_gets = 0.0
-        elif mode == PAYMENT_CHOICES[1]:
+        elif mode == PAYMENT_CHOICES[1]:  # All to Rider
             company_gets = 0.0
             rider_gets = cost + fee + tip
-        else:
+        else:  # Split Mode
             company_gets = cost
             rider_gets = fee + tip
 
+        # Prepare data
         data = {
             "date": date.strftime('%Y-%m-%d'),
             "location": location.strip(),
@@ -69,7 +73,9 @@ if submitted:
             "company_gets": company_gets,
             "rider_gets": rider_gets,
         }
+
         response = supabase.table("sales").insert(data).execute()
+
         if response.data:
             st.success("Sale added successfully! 🎉")
         else:
@@ -90,59 +96,17 @@ else:
 
     st.sidebar.header("Filters")
 
-    # -- Date Preset Logic --
-    date_list = sorted(df['date'].dt.date.dropna().unique())
-    min_date = min(date_list)
-    max_date = max(date_list)
-    def valid_preset(name):
-        today = datetime.now().date()
-        if name == "Today":
-            # Always clamp to available data
-            d0 = d1 = today
-            if d0 < min_date or d0 > max_date:
-                d0 = d1 = max_date
-        elif name == "Last 7 Days":
-            d0 = max(today - timedelta(days=6), min_date)
-            d1 = min(today, max_date)
-        elif name == "This Month":
-            month_start = today.replace(day=1)
-            d0 = max(month_start, min_date)
-            d1 = min(today, max_date)
-        else:
-            d0, d1 = min_date, max_date
-        return (d0, d1)
-
-    preset_options = ["Today", "Last 7 Days", "This Month", "All Time"]
-    st.sidebar.subheader("Date Range Preset")
-    preset = st.sidebar.selectbox("Quick Select", preset_options, index=3)
-    start_preset, end_preset = valid_preset(preset)
-
-    # --- Robust Date Range Selector ---
-    selected_range = st.sidebar.date_input(
-        "Or Select Date Range (dd/mm/yyyy)",
-        value=(start_preset, end_preset),
-        min_value=min_date,
-        max_value=max_date,
-        format="DD/MM/YYYY"
-    )
-    # Accept tuple, one-element tuple, or single date; never crash as user picks.
-    if isinstance(selected_range, tuple):
-        if len(selected_range) == 2:
-            start_date, end_date = selected_range
-        elif len(selected_range) == 1:
-            start_date = end_date = selected_range[0]
-        else:
-            start_date = end_date = min_date
+    # Date range filter
+    unique_dates = sorted(df['date'].dt.date.dropna().unique())
+    if unique_dates:
+        start_date, end_date = st.sidebar.select_slider(
+            "Select Date Range",
+            options=unique_dates,
+            value=(unique_dates[0], unique_dates[-1]),
+            help="Filter sales within this date range"
+        )
     else:
-        start_date = end_date = selected_range
-
-    # If user picks in reverse, auto-swap
-    if start_date > end_date:
-        start_date, end_date = end_date, start_date
-
-    # Clamp dates to min/max
-    start_date, end_date = max(start_date, min_date), min(end_date, max_date)
-    st.sidebar.markdown(f"**Selected Range:** {start_date.strftime('%d/%m/%Y')} &ndash; {end_date.strftime('%d/%m/%Y')}")
+        start_date, end_date = None, None
 
     # Other filters
     locations = st.sidebar.multiselect(
@@ -152,7 +116,8 @@ else:
 
     # Apply filters
     mask = pd.Series(True, index=df.index)
-    mask &= (df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)
+    if start_date and end_date:
+        mask &= (df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)
     if locations:
         mask &= df['location'].isin(locations)
     if payment_modes:
@@ -163,12 +128,14 @@ else:
     if filtered.empty:
         st.warning("No records match the selected filter criteria.")
     else:
+        # Prepare display dataframe
         display_df = filtered.copy()
-        display_df['date'] = display_df['date'].dt.strftime('%d/%m/%Y')
+        display_df['date'] = display_df['date'].dt.strftime('%a, %d/%m/%Y')
         display_df = display_df.rename(columns=lambda s: ' '.join(word.capitalize() for word in s.split('_')))
         st.subheader("Filtered Sales Records")
         st.dataframe(display_df.reset_index(drop=True), use_container_width=True)
 
+        # Summary metrics in a responsive grid
         st.subheader("Summary Statistics")
         sums = {
             'Total Delivery Fees (₵)': filtered['delivery_fee'].sum(),
@@ -177,6 +144,7 @@ else:
             'Total Owed To Company (₵)': filtered['company_gets'].sum(),
             'Total Owed To Rider (₵)': filtered['rider_gets'].sum(),
         }
+
         cols = st.columns(len(sums))
         for col, (name, value) in zip(cols, sums.items()):
             col.metric(label=name, value=f"{value:.2f}")
@@ -197,7 +165,7 @@ edit_row = df[df['id'] == selected_id]
 if not edit_row.empty:
     st.write("Selected Record:")
     display_row = edit_row.copy()
-    display_row['date'] = display_row['date'].dt.strftime('%d/%m/%Y')
+    display_row['date'] = display_row['date'].dt.strftime('%a, %d/%m/%Y')
     display_row = display_row.rename(columns=lambda s: ' '.join(word.capitalize() for word in s.split('_')))
     st.dataframe(display_row, use_container_width=True)
 
@@ -221,7 +189,9 @@ if not edit_row.empty:
         company_gets = new_cost
         rider_gets = new_fee + new_tip
 
+    # Action buttons with clear spacing
     col_edit, col_delete = st.columns(2)
+
     with col_edit:
         if st.button("Update Record"):
             update_data = {
@@ -240,6 +210,7 @@ if not edit_row.empty:
             else:
                 st.error("Failed to update record.")
                 st.json(response)
+
     with col_delete:
         if st.button("Delete Record", type="secondary"):
             response = supabase.table("sales").delete().eq("id", int(selected_id)).execute()
