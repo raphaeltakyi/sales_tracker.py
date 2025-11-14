@@ -149,13 +149,13 @@ else:
         for col, (name, value) in zip(cols, sums.items()):
             col.metric(label=name, value=format_currency_no_trailing(value))
 
-    # --- Sidebar toggle option to show/hide edit/delete section ---
-    show_edit_delete = st.sidebar.checkbox("Show Edit/Delete Section", value=False)
-
+    # --- Toggle section: Edit/Delete Record (main page, beside heading!)
+    st.divider()
+    col_toggle, col_head = st.columns([1, 9])
+    show_edit_delete = col_toggle.toggle("Show", value=False)
+    col_head.header("Edit or Delete a Sale Record")
+    
     if show_edit_delete:
-        st.divider()
-        st.header("Edit or Delete a Sale Record")
-
         selected_id = st.number_input(
             "Enter Sale ID to Edit/Delete",
             min_value=1,
