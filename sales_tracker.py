@@ -82,12 +82,9 @@ df = pd.DataFrame(response.data) if response.data else pd.DataFrame()
 # --- Sidebar Filters ---
 st.sidebar.header("Filter")
 if not df.empty:
-    # Data pre-processing
     df['date'] = pd.to_datetime(df['date'], errors='coerce')
     for col in ['cost_of_item', 'delivery_fee', 'tip', 'company_gets', 'rider_gets']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
-
-    # Ensure date_list is valid and contains only unique, sorted dates
     date_list = sorted(set(df['date'].dt.date.dropna()))
     min_date = min(date_list)
     max_date = max(date_list)
@@ -98,7 +95,6 @@ if not df.empty:
         # Clamp preset dates strictly to data range
         if preset_name == "Today":
             d0 = d1 = today
-            # Clamp if today not in data: fallback to max_date
             if today < min_date or today > max_date:
                 d0 = d1 = max_date
         elif preset_name == "Last 7 Days":
@@ -118,22 +114,39 @@ if not df.empty:
     preset = st.sidebar.selectbox("Quick Select", options=preset_names, index=3) # "All Time" default
     start_preset, end_preset = valid_preset(preset)
 
-    # Always provide a valid tuple as the default value for the range picker
+    # --- Safe Date Range Selection (robust) ---
+    # Special handling as user selects only the start date while waiting to pick the second
+    # Always return start_date <= end_date and restrict to data
     selected_range = st.sidebar.date_input(
-        "Or Select Date Range",
+        "Or Select Date Range (dd/mm/yyyy):",
         value=(start_preset, end_preset),
         min_value=min_date,
-        max_value=max_date
+        max_value=max_date,
+        format="DD/MM/YYYY"
     )
-    # Accept either a tuple or a single date (Streamlit v1.30+ can sometimes return one)
     if isinstance(selected_range, tuple):
-        start_date, end_date = selected_range
+        # User selected a range, but may have only picked the first date
+        if len(selected_range) == 2:
+            start_date, end_date = selected_range
+        elif len(selected_range) == 1:
+            # Only start date picked so far
+            start_date = end_date = selected_range[0]
+        else:
+            start_date = end_date = min_date
     else:
         start_date = end_date = selected_range
 
-    # Clamp final values just in case
-    start_date = max(start_date, min_date)
-    end_date = min(end_date, max_date)
+    # Additional check: swap if user picks dates in reverse order
+    if start_date > end_date:
+        start_date, end_date = end_date, start_date
+
+    # Clamp to data limits
+    start_date, end_date = max(start_date, min_date), min(end_date, max_date)
+
+    # Show selected range in consistent format for user clarity
+    st.sidebar.markdown(
+        f"**Selected Range:** {start_date.strftime('%d/%m/%Y')} &ndash; {end_date.strftime('%d/%m/%Y')}"
+    )
 
     locations = st.sidebar.multiselect(
         "Locations", 
@@ -161,7 +174,8 @@ if filtered.empty:
     st.info("No sales data or no records match the selected filters.")
 else:
     display_df = filtered.copy()
-    display_df['date'] = display_df['date'].dt.strftime('%a, %d/%m/%Y')
+    # All date outputs in dd/mm/yyyy as well
+    display_df['date'] = display_df['date'].dt.strftime('%d/%m/%Y')
     display_df = display_df.rename(columns=lambda s: ' '.join(word.capitalize() for word in s.split('_')))
     st.subheader("Filtered Sales Records")
     st.dataframe(display_df.reset_index(drop=True), use_container_width=True)
@@ -192,7 +206,7 @@ edit_row = df[df['id'] == selected_id]
 if not edit_row.empty:
     st.write("Selected Record:")
     display_row = edit_row.copy()
-    display_row['date'] = display_row['date'].dt.strftime('%a, %d/%m/%Y')
+    display_row['date'] = display_row['date'].dt.strftime('%d/%m/%Y')
     display_row = display_row.rename(columns=lambda s: ' '.join(word.capitalize() for word in s.split('_')))
     st.dataframe(display_row, use_container_width=True)
 
