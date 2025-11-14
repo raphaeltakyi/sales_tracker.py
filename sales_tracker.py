@@ -85,27 +85,29 @@ else:
 
     st.sidebar.header("Filters")
 
+    # --- Robust Quick Select + Slider ---
     unique_dates = sorted(df['date'].dt.date.dropna().unique())
     min_date = unique_dates[0]
     max_date = unique_dates[-1]
     today = datetime.now().date()
 
+    def get_flexible_end_date(d):
+        return d if d <= max_date else max_date
+
     def get_preset_dates(preset):
-        # Start is always min_date in data
+        # Start is always min_date in data!
         start = min_date
-        # End is based on quick_select, but always <= today and <= max_date
+        # End is flexible per quick select
         if preset == "Today":
-            end = today if today <= max_date else max_date
+            end = get_flexible_end_date(today)
         elif preset == "This Week":
             week_end = today
-            end = week_end if week_end <= max_date else max_date
+            end = get_flexible_end_date(week_end)
         elif preset == "This Month":
             month_end = today
-            end = month_end if month_end <= max_date else max_date
-        else:  # All Time
+            end = get_flexible_end_date(month_end)
+        else:  # "All Time"
             end = max_date
-        if end < start:  # edge case if data is newer than today
-            end = start
         return (start, end)
 
     quick_options = ["Today", "This Week", "This Month", "All Time"]
@@ -113,31 +115,15 @@ else:
     quick_select = st.sidebar.selectbox("Quick Select", quick_options, index=3)
     preset_start, preset_end = get_preset_dates(quick_select)
 
-    # Date input in range mode: always robust, falls back to preset, user can manually adjust
-    selected_range = st.sidebar.date_input(
-        "Date Range (dd/mm/yyyy)",
+    # --- Date slider, always starts at min_date in data, ends as per preset (but always fits options) ---
+    start_date, end_date = st.sidebar.select_slider(
+        "Select Date Range",
+        options=unique_dates,
         value=(preset_start, preset_end),
-        min_value=min_date,
-        max_value=max_date
+        help="Filter sales within this date range"
     )
-    # Accept tuple, one-date, or single date output
-    if isinstance(selected_range, tuple):
-        if len(selected_range) == 2:
-            start_date, end_date = selected_range
-        elif len(selected_range) == 1:
-            start_date = end_date = selected_range[0]
-        else:
-            start_date = end_date = min_date
-    else:
-        start_date = end_date = selected_range
 
-    # If user picks reverse, auto-swap
-    if start_date > end_date:
-        start_date, end_date = end_date, start_date
-
-    st.sidebar.markdown(
-        f"**Selected Range:** {start_date.strftime('%d/%m/%Y')} &ndash; {end_date.strftime('%d/%m/%Y')}"
-    )
+    st.sidebar.markdown(f"**Selected Range:** {start_date.strftime('%d/%m/%Y')} &ndash; {end_date.strftime('%d/%m/%Y')}")
 
     # --- Other filters ---
     locations = st.sidebar.multiselect(
@@ -165,16 +151,16 @@ else:
 
         st.subheader("Summary Statistics")
         sums = {
-            'Total Delivery Fees (₵)': int(filtered['delivery_fee'].sum()),
-            'Total Item Cost (₵)': int(filtered['cost_of_item'].sum()),
-            'Total Tips (₵)': int(filtered['tip'].sum()),
-            'Total Owed To Company (₵)': int(filtered['company_gets'].sum()),
-            'Total Owed To Rider (₵)': int(filtered['rider_gets'].sum()),
+            'Total Delivery Fees (₵)': filtered['delivery_fee'].sum(),
+            'Total Item Cost (₵)': filtered['cost_of_item'].sum(),
+            'Total Tips (₵)': filtered['tip'].sum(),
+            'Total Owed To Company (₵)': filtered['company_gets'].sum(),
+            'Total Owed To Rider (₵)': filtered['rider_gets'].sum(),
         }
 
         cols = st.columns(len(sums))
         for col, (name, value) in zip(cols, sums.items()):
-            col.metric(label=name, value=f"{value}")
+            col.metric(label=name, value=f"{value:.2f}")
 
 # --- Edit/Delete Section ---
 st.divider()
