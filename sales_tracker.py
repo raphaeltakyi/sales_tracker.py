@@ -1,14 +1,14 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 from supabase import create_client, Client
 
-# Initialize Supabase client securely via secrets
+# Initialize Supabase client via secrets
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
 
-# App title with a subtitle for clarity
+# --- Title and subtitle
 st.markdown(
     """
     <h1 style='text-align:center; color:#4B6EAF; font-weight:700; font-family: Arial, sans-serif;'>
@@ -72,7 +72,7 @@ if submitted:
             st.error("Failed to add sale. Please try again.")
             st.json(response)
 
-# --- Fetch all sales records for display and filtering ---
+# --- Fetch all sales for display and filter ---
 response = supabase.table("sales").select("*").order("date", desc=True).execute()
 df = pd.DataFrame(response.data) if response.data else pd.DataFrame()
 
@@ -85,7 +85,7 @@ else:
 
     st.sidebar.header("Filters")
 
-    # --- Robust Quick Select + Slider ---
+    # --- Quick Select + Date Slider ---
     unique_dates = sorted(df['date'].dt.date.dropna().unique())
     min_date = unique_dates[0]
     max_date = unique_dates[-1]
@@ -95,17 +95,13 @@ else:
         return d if d <= max_date else max_date
 
     def get_preset_dates(preset):
-        # Start is always min_date in data!
         start = min_date
-        # End is flexible per quick select
         if preset == "Today":
             end = get_flexible_end_date(today)
         elif preset == "This Week":
-            week_end = today
-            end = get_flexible_end_date(week_end)
+            end = get_flexible_end_date(today)
         elif preset == "This Month":
-            month_end = today
-            end = get_flexible_end_date(month_end)
+            end = get_flexible_end_date(today)
         else:  # "All Time"
             end = max_date
         return (start, end)
@@ -115,7 +111,7 @@ else:
     quick_select = st.sidebar.selectbox("Quick Select", quick_options, index=3)
     preset_start, preset_end = get_preset_dates(quick_select)
 
-    # --- Date slider, always starts at min_date in data, ends as per preset (but always fits options) ---
+    # --- Date Slider for filtering
     start_date, end_date = st.sidebar.select_slider(
         "Select Date Range",
         options=unique_dates,
@@ -158,9 +154,16 @@ else:
             'Total Owed To Rider (₵)': filtered['rider_gets'].sum(),
         }
 
+        def format_currency_no_trailing(value):
+            # Show comma separators, and drop decimals if .00
+            if float(value).is_integer():
+                return f"{int(value):,} ₵"
+            else:
+                return f"{value:,.2f} ₵"
+
         cols = st.columns(len(sums))
         for col, (name, value) in zip(cols, sums.items()):
-            col.metric(label=name, value=f"{value:.2f}")
+            col.metric(label=name, value=format_currency_no_trailing(value))
 
 # --- Edit/Delete Section ---
 st.divider()
