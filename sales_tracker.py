@@ -85,36 +85,15 @@ else:
 
     st.sidebar.header("Filters")
 
-    # --- Quick Select + Date Slider ---
+    # --- Date Slider (no quick select) ---
     unique_dates = sorted(df['date'].dt.date.dropna().unique())
     min_date = unique_dates[0]
     max_date = unique_dates[-1]
-    today = datetime.now().date()
-
-    def get_flexible_end_date(d):
-        return d if d <= max_date else max_date
-
-    def get_preset_dates(preset):
-        start = min_date
-        if preset == "Today":
-            end = get_flexible_end_date(today)
-        elif preset == "This Week":
-            end = get_flexible_end_date(today)
-        elif preset == "This Month":
-            end = get_flexible_end_date(today)
-        else:  # "All Time"
-            end = max_date
-        return (start, end)
-
-    quick_options = ["Today", "This Week", "This Month", "All Time"]
-    st.sidebar.subheader("Date Range Preset")
-    quick_select = st.sidebar.selectbox("Quick Select", quick_options, index=3)
-    preset_start, preset_end = get_preset_dates(quick_select)
 
     start_date, end_date = st.sidebar.select_slider(
         "Select Date Range",
         options=unique_dates,
-        value=(preset_start, preset_end),
+        value=(min_date, max_date),
         help="Filter sales within this date range"
     )
 
@@ -154,7 +133,6 @@ else:
         }
 
         def format_currency_no_trailing(value):
-            # Show comma separators, and drop decimals if .00
             if float(value).is_integer():
                 return f"₵{int(value):,}"
             else:
