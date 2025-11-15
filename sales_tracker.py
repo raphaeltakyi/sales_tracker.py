@@ -46,7 +46,7 @@ if submitted:
     if not location.strip():
         st.error("Please enter a location.")
     else:
-        # Correct business logic as you specified:
+        # Correct logic!
         if mode == PAYMENT_CHOICES[0]:  # All to Company (MoMo/Bank)
             company_gets = 0.0
             rider_gets = fee + tip
@@ -139,29 +139,27 @@ else:
         for col, (name, value) in zip(cols, sums.items()):
             col.metric(label=name, value=format_currency_no_trailing(value))
 
-# --- Edit/Delete Section as Collapsible ---
+# --- Edit/Delete Section as Collapsible with Selectbox for Sale ID ---
 st.divider()
 with st.expander("Edit or Delete a Sale Record"):
     st.header("Edit or Delete a Sale Record")
 
-    selected_id = st.number_input(
-        "Enter Sale ID to Edit/Delete",
-        min_value=1,
-        step=1,
-        help="Find the sale ID from the filtered sales table above"
-    )
-
-    edit_row = df[df['id'] == selected_id]
-
-    # Set blank fields for editing IF not found
-    if edit_row.empty:
-        new_loc = st.text_input("New Location", value="", key='edit_loc')
-        new_cost = st.number_input("New Cost of Item (₵)", min_value=0.0, value=0.0, format='%.2f', step=0.01, key='edit_cost')
-        new_fee = st.number_input("New Delivery Fee (₵)", min_value=0.0, value=0.0, format='%.2f', step=0.01, key='edit_fee')
-        new_tip = st.number_input("New Tip (₵)", min_value=0.0, value=0.0, format='%.2f', step=0.01, key='edit_tip')
-        new_mode = st.selectbox("New Payment Mode", PAYMENT_CHOICES, index=0, key='edit_mode')
-        st.info("Enter a valid Sale ID from the filtered table above to edit or delete a record.")
+    if not df.empty:
+        df['select_label'] = df.apply(
+            lambda r: f"ID {r['id']} | {r['date'].strftime('%Y-%m-%d')} | {r['location']}", axis=1)
+        options = df[['id', 'select_label']].set_index('select_label')['id']
+        selected_label = st.selectbox(
+            "Select Sale Record to Edit/Delete",
+            options=options.index,
+            help="Choose from existing sales"
+        )
+        selected_id = int(options[selected_label])
+        edit_row = df[df['id'] == selected_id]
     else:
+        st.info("No sales records to edit or delete.")
+        edit_row = pd.DataFrame()
+
+    if not edit_row.empty:
         st.write("Selected Record:")
         display_row = edit_row.copy()
         display_row['date'] = display_row['date'].dt.strftime('%a, %d/%m/%Y')
@@ -176,7 +174,7 @@ with st.expander("Edit or Delete a Sale Record"):
         default_index = PAYMENT_CHOICES.index(selected_mode) if selected_mode in PAYMENT_CHOICES else 0
         new_mode = st.selectbox("New Payment Mode", PAYMENT_CHOICES, index=default_index, key='edit_mode')
 
-        # Correct business logic as you specified for updates:
+        # Corrected business logic for updates
         if new_mode == PAYMENT_CHOICES[0]:  # All to Company (MoMo/Bank)
             company_gets = 0.0
             rider_gets = new_fee + new_tip
@@ -215,3 +213,5 @@ with st.expander("Edit or Delete a Sale Record"):
                 else:
                     st.error("Failed to delete record.")
                     st.json(response)
+    else:
+        st.info("Select a record above to edit or delete.")
