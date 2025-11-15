@@ -128,19 +128,137 @@ else:
     if not filtered_display.empty:
         filtered_display['date'] = filtered_display['date'].dt.strftime('%a, %d/%m/%Y')
         filtered_display = filtered_display.rename(columns=lambda x: ' '.join(word.capitalize() for word in x.split('_')))
-        st.subheader('Filtered Sales and Summary')
-        st.dataframe(filtered_display.reset_index(drop=True))
+        
+        # Modern styled header for filtered sales
+        st.markdown(
+            """
+            <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                        padding: 1rem; border-radius: 10px; margin-bottom: 1rem;'>
+                <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
+                    📊 Filtered Sales Records
+                </h3>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        st.dataframe(filtered_display.reset_index(drop=True), use_container_width=True)
 
-
-        st.subheader('Summary Statistics')
+        # Modern styled header for summary statistics
+        st.markdown(
+            """
+            <div style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
+                        padding: 1rem; border-radius: 10px; margin: 2rem 0 1rem 0;'>
+                <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
+                    💹 Summary Statistics
+                </h3>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        
+        # Summary metrics with improved styling
+        st.markdown(
+            """
+            <style>
+            .metric-container {
+                display: flex;
+                gap: 10px;
+                margin-bottom: 10px;
+            }
+            .metric-card {
+                flex: 1;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                padding: 1.5rem;
+                border-radius: 8px;
+                color: white;
+                text-align: center;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+            .metric-card:nth-child(2) {
+                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            }
+            .metric-card:nth-child(3) {
+                background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            }
+            .metric-card:nth-child(4) {
+                background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            }
+            .metric-card:nth-child(5) {
+                background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            }
+            .metric-label {
+                font-size: 0.85rem;
+                opacity: 0.9;
+                margin-bottom: 0.5rem;
+                font-weight: 600;
+            }
+            .metric-value {
+                font-size: 1.8rem;
+                font-weight: 700;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+        
         col_sum1, col_sum2, col_sum3, col_sum4, col_sum5 = st.columns(5)
-        col_sum1.metric('Total Delivery Fees', f"₵{filtered['delivery_fee'].sum():.2f}")
-        col_sum2.metric('Total Item Cost', f"₵{filtered['cost_of_item'].sum():.2f}")
-        col_sum3.metric('Total Tips', f"₵{filtered['tip'].sum():.2f}")
-        col_sum4.metric('Total Owed To Company', f"₵{filtered['company_gets'].sum():.2f}")
-        col_sum5.metric('Total Owed To Rider', f"₵{filtered['rider_gets'].sum():.2f}")
+        
+        with col_sum1:
+            st.markdown(
+                f"""
+                <div class='metric-card'>
+                    <div class='metric-label'>🚚 Delivery Fees</div>
+                    <div class='metric-value'>₵{filtered['delivery_fee'].sum():.2f}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        
+        with col_sum2:
+            st.markdown(
+                f"""
+                <div class='metric-card'>
+                    <div class='metric-label'>💰 Item Cost</div>
+                    <div class='metric-value'>₵{filtered['cost_of_item'].sum():.2f}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        
+        with col_sum3:
+            st.markdown(
+                f"""
+                <div class='metric-card'>
+                    <div class='metric-label'>💵 Tips</div>
+                    <div class='metric-value'>₵{filtered['tip'].sum():.2f}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        
+        with col_sum4:
+            st.markdown(
+                f"""
+                <div class='metric-card'>
+                    <div class='metric-label'>🏢 Company</div>
+                    <div class='metric-value'>₵{filtered['company_gets'].sum():.2f}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        
+        with col_sum5:
+            st.markdown(
+                f"""
+                <div class='metric-card'>
+                    <div class='metric-label'>🚴 Rider</div>
+                    <div class='metric-value'>₵{filtered['rider_gets'].sum():.2f}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
     else:
-        st.warning("No records for selected filter combination.")
+        st.warning("⚠️ No records for selected filter combination.")
 
 
     # --- Edit/delete section with modern styling ---
