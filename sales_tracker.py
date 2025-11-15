@@ -51,7 +51,7 @@ if submitted:
             rider_gets = fee + tip
         elif mode == PAYMENT_CHOICES[1]:
             company_gets = cost
-            rider_gets = fee + tip
+            rider_gets = 0.0
         else:
             company_gets = 0.0
             rider_gets = 0.0
