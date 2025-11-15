@@ -128,10 +128,10 @@ else:
     else:
         st.warning("No records for selected filter combination.")
 
-    # --- Edit/delete section (collapsible and auto-reset) ---
+    # --- Edit/delete section (collapsible and auto-populate) ---
     st.subheader("Edit or Delete a Sale Record")
     with st.expander("Edit/Delete Record", expanded=True):
-        selected_id = st.number_input("Enter Sale ID to Edit/Delete", min_value=1, step=1)
+        selected_id = st.number_input("Enter Sale ID to Edit/Delete", min_value=1, step=1, key='select_id')
         edit_row = filtered[filtered['id'] == selected_id]
         if not edit_row.empty:
             st.write("Selected Record:")
@@ -140,16 +140,17 @@ else:
             edit_row_display = edit_row_display.rename(columns=lambda x: ' '.join(word.capitalize() for word in x.split('_')))
             st.dataframe(edit_row_display)
 
-            new_loc = st.text_input("New Location", value=str(edit_row['location'].values[0]), key='edit_loc')
-            new_cost = st.number_input("New Cost of Item", min_value=0.0, value=float(edit_row['cost_of_item'].values[0]), format='%.2f', key='edit_cost')
-            new_fee = st.number_input("New Delivery Fee", min_value=0.0, value=float(edit_row['delivery_fee'].values[0]), format='%.2f', key='edit_fee')
-            new_tip = st.number_input("New Tip", min_value=0.0, value=float(edit_row['tip'].values[0]), format='%.2f', key='edit_tip')
+            # The input widget keys include selected_id so values auto-populate with selected record
+            new_loc = st.text_input("New Location", value=str(edit_row['location'].values[0]), key=f'edit_loc_{selected_id}')
+            new_cost = st.number_input("New Cost of Item", min_value=0.0, value=float(edit_row['cost_of_item'].values[0]), format='%.2f', key=f'edit_cost_{selected_id}')
+            new_fee = st.number_input("New Delivery Fee", min_value=0.0, value=float(edit_row['delivery_fee'].values[0]), format='%.2f', key=f'edit_fee_{selected_id}')
+            new_tip = st.number_input("New Tip", min_value=0.0, value=float(edit_row['tip'].values[0]), format='%.2f', key=f'edit_tip_{selected_id}')
             selected_mode = edit_row['payment_mode'].values[0]
             if selected_mode in PAYMENT_CHOICES:
                 default_index = PAYMENT_CHOICES.index(selected_mode)
             else:
                 default_index = 0
-            new_mode = st.selectbox("New Payment Mode", PAYMENT_CHOICES, index=default_index, key='edit_mode')
+            new_mode = st.selectbox("New Payment Mode", PAYMENT_CHOICES, index=default_index, key=f'edit_mode_{selected_id}')
 
             if new_mode == 'All to Company (MoMo/Bank)':
                 company_gets = 0.0
