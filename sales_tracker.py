@@ -98,10 +98,9 @@ st.markdown(
     <h1 style='text-align:center; color:#4B6EAF; font-weight:700; font-family: Arial, sans-serif; margin-top: 0;'>
         Daily Sales Tracker - Mannequins Ghana
     </h1>
-    <p style='text-align:center; font-size:1rem; color:#6c757d; font-family: Arial, sans-serif; margin-bottom: 1rem;'>
+    <p style='text-align:center; font-size:1rem; color:#6c757d; font-family: Arial, sans-serif; margin-bottom: 1.5rem;'>
         Built with Love from Kofi ❤️
     </p>
-    <hr style='margin: 0.5rem 0;'>
     """, 
     unsafe_allow_html=True,
 )
@@ -256,7 +255,7 @@ else:
         st.markdown(
             """
             <div style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
-                        padding: 1rem; border-radius: 10px; margin: 0.8rem 0;'>
+                        padding: 1rem; border-radius: 10px; margin: 1rem 0;'>
                 <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
                     💹 Summary Statistics
                 </h3>
@@ -375,7 +374,7 @@ else:
     st.markdown(
         """
         <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                    padding: 1rem; border-radius: 10px; margin: 0.8rem 0;'>
+                    padding: 1rem; border-radius: 10px; margin: 1rem 0;'>
             <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
                 🔧 Manage Records
             </h3>
