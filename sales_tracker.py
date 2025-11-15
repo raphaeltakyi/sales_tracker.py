@@ -8,8 +8,19 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
 
-st.title('Daily Sales Tracker - Mannequins Ghana')
-st.markdown('<br>', unsafe_allow_html=True)
+# --- Title and subtitle
+st.markdown(
+    """
+    <h1 style='text-align:center; color:#4B6EAF; font-weight:700; font-family: Arial, sans-serif;'>
+        Daily Sales Tracker - Mannequins Ghana
+    </h1>
+    <p style='text-align:center; font-size:1rem; color:#6c757d; font-family: Arial, sans-serif;'>
+        Built with Love from Kofi ❤️
+    </p>
+    <hr>
+    """, 
+    unsafe_allow_html=True,
+)
 
 PAYMENT_CHOICES = [
     'All to Company (MoMo/Bank)',
