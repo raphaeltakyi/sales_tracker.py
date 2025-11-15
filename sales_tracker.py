@@ -18,7 +18,7 @@ st.markdown(
         Built with Love from Kofi ❤️
     </p>
     <hr>
-    """, 
+    """,
     unsafe_allow_html=True,
 )
 
@@ -36,9 +36,9 @@ with st.form("sale_form", clear_on_submit=True):
         date = st.date_input("Date", value=datetime.now(), help="Select the sale date")
         location = st.text_input("Location", placeholder="Enter sale location")
     with col2:
-        cost = st.number_input("Cost of Item (₵)", min_value=0.0, format="%.2f", step=0.01)
-        fee = st.number_input("Delivery Fee (₵)", min_value=0.0, format="%.2f", step=0.01)
-        tip = st.number_input("Tip (₵)", min_value=0.0, format="%.2f", step=0.01)
+        cost = st.number_input("Cost of Item (₵)", min_value=0.0, value=0.0, format="%.2f", step=0.01)
+        fee = st.number_input("Delivery Fee (₵)", min_value=0.0, value=0.0, format="%.2f", step=0.01)
+        tip = st.number_input("Tip (₵)", min_value=0.0, value=0.0, format="%.2f", step=0.01)
         mode = st.selectbox("Payment Mode", PAYMENT_CHOICES)
     submitted = st.form_submit_button("Add Sale")
 
@@ -46,13 +46,14 @@ if submitted:
     if not location.strip():
         st.error("Please enter a location.")
     else:
-        if mode == PAYMENT_CHOICES[0]:
+        # Correct business logic as you specified:
+        if mode == PAYMENT_CHOICES[0]:  # All to Company (MoMo/Bank)
             company_gets = 0.0
             rider_gets = fee + tip
-        elif mode == PAYMENT_CHOICES[1]:
+        elif mode == PAYMENT_CHOICES[1]:  # All to Rider (Cash)
             company_gets = cost
             rider_gets = 0.0
-        else:
+        else:  # Split
             company_gets = 0.0
             rider_gets = 0.0
         data = {
@@ -84,8 +85,6 @@ else:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
     st.sidebar.header("Filters")
-
-    # --- Date Slider (no quick select) ---
     unique_dates = sorted(df['date'].dt.date.dropna().unique())
     min_date = unique_dates[0]
     max_date = unique_dates[-1]
@@ -96,10 +95,8 @@ else:
         value=(min_date, max_date),
         help="Filter sales within this date range"
     )
-
     st.sidebar.markdown(f"**Selected Range:** {start_date.strftime('%d/%m/%Y')} &ndash; {end_date.strftime('%d/%m/%Y')}")
 
-    # --- Other filters ---
     locations = st.sidebar.multiselect(
         "Locations", options=sorted(df['location'].dropna().unique()), default=None)
     payment_modes = st.sidebar.multiselect(
@@ -156,7 +153,15 @@ with st.expander("Edit or Delete a Sale Record"):
 
     edit_row = df[df['id'] == selected_id]
 
-    if not edit_row.empty:
+    # Set blank fields for editing IF not found
+    if edit_row.empty:
+        new_loc = st.text_input("New Location", value="", key='edit_loc')
+        new_cost = st.number_input("New Cost of Item (₵)", min_value=0.0, value=0.0, format='%.2f', step=0.01, key='edit_cost')
+        new_fee = st.number_input("New Delivery Fee (₵)", min_value=0.0, value=0.0, format='%.2f', step=0.01, key='edit_fee')
+        new_tip = st.number_input("New Tip (₵)", min_value=0.0, value=0.0, format='%.2f', step=0.01, key='edit_tip')
+        new_mode = st.selectbox("New Payment Mode", PAYMENT_CHOICES, index=0, key='edit_mode')
+        st.info("Enter a valid Sale ID from the filtered table above to edit or delete a record.")
+    else:
         st.write("Selected Record:")
         display_row = edit_row.copy()
         display_row['date'] = display_row['date'].dt.strftime('%a, %d/%m/%Y')
@@ -171,15 +176,16 @@ with st.expander("Edit or Delete a Sale Record"):
         default_index = PAYMENT_CHOICES.index(selected_mode) if selected_mode in PAYMENT_CHOICES else 0
         new_mode = st.selectbox("New Payment Mode", PAYMENT_CHOICES, index=default_index, key='edit_mode')
 
-        if new_mode == PAYMENT_CHOICES[0]:
-            company_gets = new_cost + new_fee + new_tip
-            rider_gets = 0.0
-        elif new_mode == PAYMENT_CHOICES[1]:
+        # Correct business logic as you specified for updates:
+        if new_mode == PAYMENT_CHOICES[0]:  # All to Company (MoMo/Bank)
             company_gets = 0.0
-            rider_gets = new_cost + new_fee + new_tip
-        else:
-            company_gets = new_cost
             rider_gets = new_fee + new_tip
+        elif new_mode == PAYMENT_CHOICES[1]:  # All to Rider (Cash)
+            company_gets = new_cost
+            rider_gets = 0.0
+        else:  # Split
+            company_gets = 0.0
+            rider_gets = 0.0
 
         col_edit, col_delete = st.columns(2)
         with col_edit:
@@ -209,5 +215,3 @@ with st.expander("Edit or Delete a Sale Record"):
                 else:
                     st.error("Failed to delete record.")
                     st.json(response)
-    else:
-        st.info("Enter a valid Sale ID from the filtered table above to edit or delete a record.")
