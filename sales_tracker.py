@@ -246,8 +246,21 @@ else:
         filtered_display['date'] = filtered_display['date'].dt.strftime('%a, %d/%m/%Y')
         filtered_display = filtered_display.rename(columns=lambda x: ' '.join(word.capitalize() for word in x.split('_')))
         
+        # Heading for filtered sales records section
+        st.markdown(
+            """
+            <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                        padding: 1rem; border-radius: 10px; margin: 1rem 0;'>
+                <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
+                    📊 Filtered Sales Records
+                </h3>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        
         # Collapsible section for filtered sales records
-        with st.expander("📊 Filtered Sales Records", expanded=True):
+        with st.expander("View Table", expanded=True):
             st.dataframe(filtered_display.reset_index(drop=True), use_container_width=True, height=300)
 
 
