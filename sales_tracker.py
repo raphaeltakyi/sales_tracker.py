@@ -78,6 +78,40 @@ st.markdown(
         color: #4B6EAF !important;
         font-size: 0.95rem !important;
     }
+    
+    /* Style radio buttons for payment mode */
+    .stRadio > label {
+        font-weight: 600 !important;
+        color: #4B6EAF !important;
+        font-size: 0.95rem !important;
+    }
+    
+    .stRadio > div {
+        gap: 1rem !important;
+    }
+    
+    .stRadio > div > label {
+        background-color: #f8f9fa !important;
+        padding: 0.75rem 1rem !important;
+        border-radius: 8px !important;
+        border: 2px solid #e0e0e0 !important;
+        cursor: pointer !important;
+        transition: all 0.3s ease !important;
+        margin-bottom: 0.5rem !important;
+        font-weight: 500 !important;
+        color: #333 !important;
+    }
+    
+    .stRadio > div > label:hover {
+        border-color: #667eea !important;
+        background-color: #fff !important;
+    }
+    
+    .stRadio > div > label[aria-checked="true"] {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        border-color: #667eea !important;
+    }
     </style>
     """,
     unsafe_allow_html=True
@@ -136,7 +170,6 @@ with st.form("sale_form", clear_on_submit=True):
         st.markdown("<div style='background-color: #f8f9fa; padding: 1rem; border-radius: 8px;'>", unsafe_allow_html=True)
         date = st.date_input("📅 Date", datetime.now())
         location = st.text_input("📍 Location", placeholder="Enter location")
-        mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES)
         st.markdown("</div>", unsafe_allow_html=True)
     
     with col2:
@@ -145,6 +178,10 @@ with st.form("sale_form", clear_on_submit=True):
         fee = st.number_input("🚚 Delivery Fee", min_value=0.0, format='%.2f', step=0.01)
         tip = st.number_input("💵 Tip", min_value=0.0, format='%.2f', step=0.01)
         st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Payment mode selection with responsive radio buttons
+    st.markdown("<p style='font-weight: 600; color: #4B6EAF; font-size: 0.95rem; margin-bottom: 0.5rem;'>💳 Payment Mode</p>", unsafe_allow_html=True)
+    mode = st.radio("Select a payment mode:", PAYMENT_CHOICES, label_visibility="collapsed", horizontal=False)
     
     # Submit button with custom styling
     col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
@@ -438,13 +475,16 @@ else:
             with edit_col2:
                 st.markdown("<div style='background-color: #f8f9fa; padding: 1rem; border-radius: 8px;'>", unsafe_allow_html=True)
                 new_tip = st.number_input("💵 Tip", min_value=0.0, value=float(edit_row['tip'].values[0]), format='%.2f', key=f'edit_tip_{selected_id}')
-                selected_mode = edit_row['payment_mode'].values[0]
-                if selected_mode in PAYMENT_CHOICES:
-                    default_index = PAYMENT_CHOICES.index(selected_mode)
-                else:
-                    default_index = 0
-                new_mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES, index=default_index, key=f'edit_mode_{selected_id}')
                 st.markdown("</div>", unsafe_allow_html=True)
+            
+            # Payment mode selection with responsive radio buttons
+            st.markdown("<p style='font-weight: 600; color: #4B6EAF; font-size: 0.95rem; margin-bottom: 0.5rem;'>💳 Payment Mode</p>", unsafe_allow_html=True)
+            selected_mode = edit_row['payment_mode'].values[0]
+            if selected_mode in PAYMENT_CHOICES:
+                default_index = PAYMENT_CHOICES.index(selected_mode)
+            else:
+                default_index = 0
+            new_mode = st.radio("Select a payment mode:", PAYMENT_CHOICES, index=default_index, key=f'edit_mode_{selected_id}', label_visibility="collapsed", horizontal=False)
 
 
             # Calculate based on payment mode
