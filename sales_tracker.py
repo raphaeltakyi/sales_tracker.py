@@ -4,6 +4,58 @@ from datetime import datetime
 from supabase import create_client, Client
 
 
+# --- Configure page layout ---
+st.set_page_config(
+    page_title="Daily Sales Tracker - Mannequins Ghana",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# --- Custom CSS to maximize vertical footprint ---
+st.markdown(
+    """
+    <style>
+    /* Remove top padding and margins */
+    .main {
+        padding-top: 0rem;
+    }
+    
+    /* Maximize content width */
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 0rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        max-width: 100%;
+    }
+    
+    /* Reduce spacing on sections */
+    h1, h2, h3 {
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Improve dataframe height */
+    [data-testid="stDataFrame"] {
+        height: auto;
+    }
+    
+    /* Reduce expander margins */
+    .streamlit-expanderHeader {
+        padding: 0.5rem 0rem;
+    }
+    
+    /* Remove extra spacing from st.markdown */
+    .stMarkdown {
+        margin-bottom: 0.5rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
 # Initialize Supabase client
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
@@ -13,13 +65,13 @@ supabase: Client = create_client(url, key)
 # --- Title and subtitle
 st.markdown(
     """
-    <h1 style='text-align:center; color:#4B6EAF; font-weight:700; font-family: Arial, sans-serif;'>
+    <h1 style='text-align:center; color:#4B6EAF; font-weight:700; font-family: Arial, sans-serif; margin-top: 0;'>
         Daily Sales Tracker - Mannequins Ghana
     </h1>
-    <p style='text-align:center; font-size:1rem; color:#6c757d; font-family: Arial, sans-serif;'>
+    <p style='text-align:center; font-size:1rem; color:#6c757d; font-family: Arial, sans-serif; margin-bottom: 1rem;'>
         Built with Love from Kofi ❤️
     </p>
-    <hr>
+    <hr style='margin: 0.5rem 0;'>
     """, 
     unsafe_allow_html=True,
 )
@@ -133,7 +185,7 @@ else:
         st.markdown(
             """
             <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                        padding: 1rem; border-radius: 10px; margin-bottom: 1rem;'>
+                        padding: 1rem; border-radius: 10px; margin-bottom: 0.8rem; margin-top: 0.5rem;'>
                 <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
                     📊 Filtered Sales Records
                 </h3>
@@ -141,13 +193,13 @@ else:
             """,
             unsafe_allow_html=True
         )
-        st.dataframe(filtered_display.reset_index(drop=True), use_container_width=True)
+        st.dataframe(filtered_display.reset_index(drop=True), use_container_width=True, height=300)
 
         # Modern styled header for summary statistics
         st.markdown(
             """
             <div style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
-                        padding: 1rem; border-radius: 10px; margin: 2rem 0 1rem 0;'>
+                        padding: 1rem; border-radius: 10px; margin: 0.8rem 0;'>
                 <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
                     💹 Summary Statistics
                 </h3>
@@ -262,11 +314,10 @@ else:
 
 
     # --- Edit/delete section with modern styling ---
-    st.markdown("<br>", unsafe_allow_html=True)
     st.markdown(
         """
         <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                    padding: 1rem; border-radius: 10px; margin-bottom: 1rem;'>
+                    padding: 1rem; border-radius: 10px; margin: 0.8rem 0;'>
             <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
                 🔧 Manage Records
             </h3>
