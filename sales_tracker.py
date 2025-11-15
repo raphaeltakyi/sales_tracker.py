@@ -76,38 +76,6 @@ st.markdown(
         color: #4B6EAF !important;
         font-size: 0.95rem !important;
     }
-    
-    /* Fix selectbox dropdown width and text visibility */
-    .stSelectbox div[data-baseweb="select"] {
-        width: 100% !important;
-    }
-    
-    .stSelectbox [role="listbox"] {
-        width: 100% !important;
-    }
-    
-    .stSelectbox div[data-baseweb="select"] > div {
-        width: 100% !important;
-        white-space: normal !important;
-        word-wrap: break-word !important;
-    }
-    
-    .stSelectbox div[data-baseweb="select"] > div > div {
-        width: 100% !important;
-    }
-    
-    /* Ensure selectbox options are fully visible */
-    [data-baseweb="menu"] {
-        width: 100% !important;
-    }
-    
-    [data-baseweb="menu"] li {
-        white-space: normal !important;
-        word-wrap: break-word !important;
-        padding: 0.75rem !important;
-        min-height: auto !important;
-        height: auto !important;
-    }
     </style>
     """,
     unsafe_allow_html=True
@@ -162,23 +130,13 @@ with st.form("sale_form", clear_on_submit=True):
         st.markdown("<div style='background-color: #f8f9fa; padding: 1rem; border-radius: 8px;'>", unsafe_allow_html=True)
         date = st.date_input("📅 Date", datetime.now())
         location = st.text_input("📍 Location", placeholder="Enter location")
+        mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES)
         st.markdown("</div>", unsafe_allow_html=True)
     
     with col2:
         st.markdown("<div style='background-color: #f8f9fa; padding: 1rem; border-radius: 8px;'>", unsafe_allow_html=True)
         cost = st.number_input("💰 Cost of Item", min_value=0.0, format='%.2f', step=0.01)
         fee = st.number_input("🚚 Delivery Fee", min_value=0.0, format='%.2f', step=0.01)
-        st.markdown("</div>", unsafe_allow_html=True)
-    
-    # Payment mode and tip in full width
-    col_payment, col_tip = st.columns([1.5, 1])
-    with col_payment:
-        st.markdown("<div style='background-color: #f8f9fa; padding: 1rem; border-radius: 8px;'>", unsafe_allow_html=True)
-        mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES, help="Select how the payment will be distributed")
-        st.markdown("</div>", unsafe_allow_html=True)
-    
-    with col_tip:
-        st.markdown("<div style='background-color: #f8f9fa; padding: 1rem; border-radius: 8px;'>", unsafe_allow_html=True)
         tip = st.number_input("💵 Tip", min_value=0.0, format='%.2f', step=0.01)
         st.markdown("</div>", unsafe_allow_html=True)
     
@@ -464,7 +422,7 @@ else:
                     default_index = PAYMENT_CHOICES.index(selected_mode)
                 else:
                     default_index = 0
-                new_mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES, index=default_index, key=f'edit_mode_{selected_id}', help="Select how the payment will be distributed")
+                new_mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES, index=default_index, key=f'edit_mode_{selected_id}')
                 st.markdown("</div>", unsafe_allow_html=True)
 
             # Calculate based on payment mode
