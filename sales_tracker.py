@@ -3,23 +3,23 @@ import pandas as pd
 from datetime import datetime
 from supabase import create_client, Client
 
-# --- Initialize Supabase client ---
-supabase: Client = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
+# Initialize Supabase client
+url = st.secrets["SUPABASE_URL"]
+key = st.secrets["SUPABASE_KEY"]
+supabase: Client = create_client(url, key)
 
-# ================================
-#           UI HEADER
-# ================================
+# --- Title and subtitle
 st.markdown(
     """
-    <h1 style='text-align:center; color:#4B6EAF; font-weight:700;'>
+    <h1 style='text-align:center; color:#4B6EAF; font-weight:700; font-family: Arial, sans-serif;'>
         Daily Sales Tracker - Mannequins Ghana
     </h1>
-    <p style='text-align:center; color:#6c757d;'>
+    <p style='text-align:center; font-size:1rem; color:#6c757d; font-family: Arial, sans-serif;'>
         Built with Love from Kofi ❤️
     </p>
     <hr>
-    """,
-    unsafe_allow_html=True
+    """, 
+    unsafe_allow_html=True,
 )
 
 PAYMENT_CHOICES = [
@@ -28,30 +28,33 @@ PAYMENT_CHOICES = [
     'Split: Item to Company, Delivery+Tip to Rider'
 ]
 
-# ================================
-#        ADD NEW SALE
-# ================================
+# --- Add a sale form ---
 with st.form("sale_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     date = col1.date_input("Date", datetime.now())
     location = col1.text_input("Location")
-    cost = col2.number_input("Cost of Item (GHS)", min_value=0.0, format="%.2f")
-    fee = col2.number_input("Delivery Fee (GHS)", min_value=0.0, format="%.2f")
-    tip = col2.number_input("Tip (GHS)", min_value=0.0, format="%.2f")
+    cost = col2.number_input("Cost of Item", min_value=0.0, format='%.2f')
+    fee = col2.number_input("Delivery Fee", min_value=0.0, format='%.2f')
+    tip = col2.number_input("Tip", min_value=0.0, format='%.2f')
     mode = col1.selectbox("Payment Mode", PAYMENT_CHOICES)
     submitted = st.form_submit_button("Add Sale")
 
 if submitted:
-    # Compute company vs rider earnings
     if mode == 'All to Company (MoMo/Bank)':
-        company_gets, rider_gets = 0.0, fee + tip
+        company_gets = 0.0
+        rider_gets = fee + tip
     elif mode == 'All to Rider (Cash)':
-        company_gets, rider_gets = cost, 0.0
-    else:  # Split
-        company_gets, rider_gets = 0.0, 0.0
+        company_gets = cost
+        rider_gets = 0.0
+    elif mode == 'Split: Item to Company, Delivery+Tip to Rider':
+        company_gets = 0.0
+        rider_gets = 0.0
+    else:
+        company_gets = 0.0
+        rider_gets = 0.0
 
     data = {
-        "date": date.strftime("%Y-%m-%d"),
+        "date": date.strftime('%Y-%m-%d'),
         "location": location,
         "cost_of_item": cost,
         "delivery_fee": fee,
@@ -60,117 +63,131 @@ if submitted:
         "company_gets": company_gets,
         "rider_gets": rider_gets
     }
-
     response = supabase.table("sales").insert(data).execute()
 
-    st.success("Sale added!") if response.data else st.error("Failed to add sale.")
+    if response.data:
+        st.success("Sale added!")
+    else:
+        st.error("Failed to add sale.")
+        st.write(response)  # Optional for debugging
 
-# ================================
-#        RETRIEVE DATA
-# ================================
+# --- Fetch all sales ---
 response = supabase.table("sales").select("*").order("date", desc=True).execute()
-df = pd.DataFrame(response.data or [])
+df = pd.DataFrame(response.data) if response.data else pd.DataFrame()
 
 if df.empty:
-    st.info("No data yet. Add your first sale above.")
-    st.stop()
-
-# Ensure correct datatypes
-df['date'] = pd.to_datetime(df['date'], errors='coerce')
-num_cols = ['cost_of_item', 'delivery_fee', 'tip', 'company_gets', 'rider_gets']
-df[num_cols] = df[num_cols].apply(pd.to_numeric, errors='coerce')
-
-# ================================
-#        SIDEBAR FILTERS
-# ================================
-st.sidebar.header("Filters")
-unique_dates = sorted(df['date'].dt.date.unique())
-
-start_date, end_date = st.sidebar.select_slider(
-    "Select Date Range",
-    options=unique_dates,
-    value=(unique_dates[0], unique_dates[-1])
-)
-
-locations = st.sidebar.multiselect("Locations", sorted(df['location'].unique()))
-payment_modes = st.sidebar.multiselect("Payment Mode", PAYMENT_CHOICES)
-
-mask = (df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)
-if locations:
-    mask &= df['location'].isin(locations)
-if payment_modes:
-    mask &= df['payment_mode'].isin(payment_modes)
-
-filtered = df[mask]
-
-# ================================
-#     DISPLAY FILTERED DATA
-# ================================
-st.subheader("Filtered Sales and Summary")
-
-if filtered.empty:
-    st.warning("No records for selected filters.")
+    st.info('No data yet. Add your first sale above.')
 else:
-    display_df = filtered.copy()
-    display_df['date'] = display_df['date'].dt.strftime("%a, %d/%m/%Y")
-    display_df = display_df.rename(columns=lambda x: x.replace("_", " ").title())
+    st.sidebar.header('Filter')
+    # Parse 'date' as datetime
+    df['date'] = pd.to_datetime(df['date'], errors='coerce')
+    # Ensure numeric columns are float
+    for col in ['cost_of_item', 'delivery_fee', 'tip', 'company_gets', 'rider_gets']:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    st.dataframe(display_df.reset_index(drop=True))
-
-    # Summary Metrics
-    col1, col2, col3, col4, col5 = st.columns(5)
-    col1.metric("Total Delivery Fees", f"₵{filtered['delivery_fee'].sum():.2f}")
-    col2.metric("Total Item Cost", f"₵{filtered['cost_of_item'].sum():.2f}")
-    col3.metric("Total Tips", f"₵{filtered['tip'].sum():.2f}")
-    col4.metric("Total To Company", f"₵{filtered['company_gets'].sum():.2f}")
-    col5.metric("Total To Rider", f"₵{filtered['rider_gets'].sum():.2f}")
-
-# ================================
-#     EDIT / DELETE RECORDS
-# ================================
-st.subheader("Edit or Delete a Sale Record")
-record_id = st.number_input("Enter Sale ID", min_value=1, step=1)
-selected = df[df['id'] == record_id]
-
-if selected.empty:
-    st.info("Enter a valid Sale ID to edit or delete.")
-else:
-    row = selected.iloc[0]
-    st.write("Selected Record:")
-    st.dataframe(selected)
-
-    # Editable fields
-    new_loc = st.text_input("New Location", value=row['location'])
-    new_cost = st.number_input("New Cost of Item", min_value=0.0, value=row['cost_of_item'])
-    new_fee = st.number_input("New Delivery Fee", min_value=0.0, value=row['delivery_fee'])
-    new_tip = st.number_input("New Tip", min_value=0.0, value=row['tip'])
-    new_mode = st.selectbox("New Payment Mode", PAYMENT_CHOICES, index=PAYMENT_CHOICES.index(row['payment_mode']))
-
-    # Recompute company/rider shares
-    if new_mode == 'All to Company (MoMo/Bank)':
-        company_gets, rider_gets = 0.0, new_fee + new_tip
-    elif new_mode == 'All to Rider (Cash)':
-        company_gets, rider_gets = new_cost, 0.0
+    # --- Date range filter using only dates present in data ---
+    unique_dates = sorted(df['date'].dt.date.dropna().unique())
+    if unique_dates:
+        start_date, end_date = st.sidebar.select_slider(
+            'Select Date Range',
+            options=unique_dates,
+            value=(unique_dates[0], unique_dates[-1])
+        )
     else:
-        company_gets, rider_gets = 0.0, 0.0
+        start_date, end_date = None, None
 
-    # Update action
-    if st.button("Update Record"):
-        update_data = {
-            "location": new_loc,
-            "cost_of_item": new_cost,
-            "delivery_fee": new_fee,
-            "tip": new_tip,
-            "payment_mode": new_mode,
-            "company_gets": company_gets,
-            "rider_gets": rider_gets,
-        }
-        resp = supabase.table("sales").update(update_data).eq("id", record_id).execute()
-        st.success("Updated!") if resp.data else st.error("Update failed.")
-        st.rerun()
+    # Other filters
+    locations = st.sidebar.multiselect('Locations', sorted(df['location'].dropna().unique()), default=None)
+    payment_modes = st.sidebar.multiselect('Payment Mode', PAYMENT_CHOICES, default=None)
 
-    # Delete action
-    if st.button("Delete Record"):
-        resp = supabase.table("sales").delete().eq("id", record_id).execute()
-        st.success("Record deleted!") if resp.data else st.error("Delete failed.")
-        st.rerun()
+    # Filter logic using only dates available in data
+    if start_date and end_date:
+        mask = (df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)
+        if locations:
+            mask &= df['location'].isin(locations)
+        if payment_modes:
+            mask &= df['payment_mode'].isin(payment_modes)
+        filtered = df[mask]
+    else:
+        filtered = pd.DataFrame()
+
+    filtered_display = filtered.copy()
+    if not filtered_display.empty:
+        filtered_display['date'] = filtered_display['date'].dt.strftime('%a, %d/%m/%Y')
+        filtered_display = filtered_display.rename(columns=lambda x: ' '.join(word.capitalize() for word in x.split('_')))
+        st.subheader('Filtered Sales and Summary')
+        st.dataframe(filtered_display.reset_index(drop=True))
+
+        st.subheader('Summary Statistics')
+        col_sum1, col_sum2, col_sum3, col_sum4, col_sum5 = st.columns(5)
+        col_sum1.metric('Total Delivery Fees', f"₵{filtered['delivery_fee'].sum():.2f}")
+        col_sum2.metric('Total Item Cost', f"₵{filtered['cost_of_item'].sum():.2f}")
+        col_sum3.metric('Total Tips', f"₵{filtered['tip'].sum():.2f}")
+        col_sum4.metric('Total Owed To Company', f"₵{filtered['company_gets'].sum():.2f}")
+        col_sum5.metric('Total Owed To Rider', f"₵{filtered['rider_gets'].sum():.2f}")
+    else:
+        st.warning("No records for selected filter combination.")
+
+    # --- Edit/delete section ---
+    st.subheader("Edit or Delete a Sale Record")
+    selected_id = st.number_input("Enter Sale ID to Edit/Delete", min_value=1, step=1)
+    edit_row = filtered[filtered['id'] == selected_id]
+    if not edit_row.empty:
+        st.write("Selected Record:")
+        edit_row_display = edit_row.copy()
+        edit_row_display['date'] = edit_row_display['date'].dt.strftime('%a, %d/%m/%Y')
+        edit_row_display = edit_row_display.rename(columns=lambda x: ' '.join(word.capitalize() for word in x.split('_')))
+        st.dataframe(edit_row_display)
+
+        new_loc = st.text_input("New Location", value=str(edit_row['location'].values[0]), key='edit_loc')
+        new_cost = st.number_input("New Cost of Item", min_value=0.0, value=float(edit_row['cost_of_item'].values[0]), format='%.2f', key='edit_cost')
+        new_fee = st.number_input("New Delivery Fee", min_value=0.0, value=float(edit_row['delivery_fee'].values[0]), format='%.2f', key='edit_fee')
+        new_tip = st.number_input("New Tip", min_value=0.0, value=float(edit_row['tip'].values[0]), format='%.2f', key='edit_tip')
+        selected_mode = edit_row['payment_mode'].values[0]
+        if selected_mode in PAYMENT_CHOICES:
+            default_index = PAYMENT_CHOICES.index(selected_mode)
+        else:
+            default_index = 0
+        new_mode = st.selectbox("New Payment Mode", PAYMENT_CHOICES, index=default_index, key='edit_mode')
+
+        if new_mode == 'All to Company (MoMo/Bank)':
+            company_gets = 0.0
+            rider_gets = new_fee + new_tip
+        elif new_mode == 'All to Rider (Cash)':
+            company_gets = new_cost
+            rider_gets = 0.0
+        elif new_mode == 'Split: Item to Company, Delivery+Tip to Rider':
+            company_gets = 0.0
+            rider_gets = 0.0
+        else:
+            company_gets = 0.0
+            rider_gets = 0.0
+
+        if st.button("Update Record"):
+            update_data = {
+                "location": new_loc,
+                "cost_of_item": new_cost,
+                "delivery_fee": new_fee,
+                "tip": new_tip,
+                "payment_mode": new_mode,
+                "company_gets": company_gets,
+                "rider_gets": rider_gets
+            }
+            response = supabase.table("sales").update(update_data).eq("id", int(selected_id)).execute()
+            if response.data:
+                st.success("Record updated!")
+                st.rerun()
+            else:
+                st.error("Failed to update record.")
+                st.write(response)
+
+        if st.button("Delete Record"):
+            response = supabase.table("sales").delete().eq("id", int(selected_id)).execute()
+            if response.data:
+                st.success("Record deleted!")
+                st.rerun()
+            else:
+                st.error("Failed to delete record.")
+                st.write(response)
+    else:
+        st.info("Enter a valid Sale ID to edit or delete.")
