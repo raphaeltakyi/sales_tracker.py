@@ -133,23 +133,22 @@ with st.form("sale_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("<div style='background-color: #f8f9fa; padding: 1rem; border-radius: 8px;'>", unsafe_allow_html=True)
-        date = st.date_input("📅 Date", datetime.now())
-        location = st.text_input("📍 Location", placeholder="Enter location")
-        mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES)
-        st.markdown("</div>", unsafe_allow_html=True)
+        with st.container(border=True):
+            date = st.date_input("📅 Date", datetime.now())
+            location = st.text_input("📍 Location", placeholder="Enter location")
+            mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES)
     
     with col2:
-        st.markdown("<div style='background-color: #f8f9fa; padding: 1rem; border-radius: 8px;'>", unsafe_allow_html=True)
-        cost = st.number_input("💰 Cost of Item", min_value=0.0, format='%.2f', step=0.01)
-        fee = st.number_input("🚚 Delivery Fee", min_value=0.0, format='%.2f', step=0.01)
-        tip = st.number_input("💵 Tip", min_value=0.0, format='%.2f', step=0.01)
-        st.markdown("</div>", unsafe_allow_html=True)
+        with st.container(border=True):
+            cost = st.number_input("💰 Cost of Item", min_value=0.0, format='%.2f', step=0.01)
+            fee = st.number_input("🚚 Delivery Fee", min_value=0.0, format='%.2f', step=0.01)
+            tip = st.number_input("💵 Tip", min_value=0.0, format='%.2f', step=0.01)
     
-    # Submit button with custom styling
+    # Submit button centered
     col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
     with col_btn2:
         submitted = st.form_submit_button("✅ Add Sale", use_container_width=True, type="primary")
+
 
 
 
