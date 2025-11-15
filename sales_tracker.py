@@ -50,6 +50,32 @@ st.markdown(
     .stMarkdown {
         margin-bottom: 0.5rem;
     }
+    
+    /* Style form inputs */
+    .stTextInput > div > div > input,
+    .stNumberInput > div > div > input,
+    .stSelectbox > div > div > div {
+        border-radius: 8px !important;
+        border: 2px solid #e0e0e0 !important;
+        padding: 0.75rem !important;
+        font-size: 1rem !important;
+    }
+    
+    .stTextInput > div > div > input:focus,
+    .stNumberInput > div > div > input:focus {
+        border: 2px solid #667eea !important;
+        box-shadow: 0 0 10px rgba(102, 126, 234, 0.2) !important;
+    }
+    
+    /* Style form labels */
+    .stTextInput > label,
+    .stNumberInput > label,
+    .stSelectbox > label,
+    .stDateInput > label {
+        font-weight: 600 !important;
+        color: #4B6EAF !important;
+        font-size: 0.95rem !important;
+    }
     </style>
     """,
     unsafe_allow_html=True
@@ -84,16 +110,40 @@ PAYMENT_CHOICES = [
 ]
 
 
-# --- Add a sale form ---
+# --- Add a sale form with modern styling ---
+st.markdown(
+    """
+    <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                padding: 1rem; border-radius: 10px; margin-bottom: 1rem;'>
+        <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
+            ➕ Add New Sale
+        </h3>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 with st.form("sale_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
-    date = col1.date_input("Date", datetime.now())
-    location = col1.text_input("Location")
-    cost = col2.number_input("Cost of Item", min_value=0.0, format='%.2f')
-    fee = col2.number_input("Delivery Fee", min_value=0.0, format='%.2f')
-    tip = col2.number_input("Tip", min_value=0.0, format='%.2f')
-    mode = col1.selectbox("Payment Mode", PAYMENT_CHOICES)
-    submitted = st.form_submit_button("Add Sale")
+    
+    with col1:
+        st.markdown("<div style='background-color: #f8f9fa; padding: 1rem; border-radius: 8px;'>", unsafe_allow_html=True)
+        date = st.date_input("📅 Date", datetime.now())
+        location = st.text_input("📍 Location", placeholder="Enter location")
+        mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES)
+        st.markdown("</div>", unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("<div style='background-color: #f8f9fa; padding: 1rem; border-radius: 8px;'>", unsafe_allow_html=True)
+        cost = st.number_input("💰 Cost of Item", min_value=0.0, format='%.2f', step=0.01)
+        fee = st.number_input("🚚 Delivery Fee", min_value=0.0, format='%.2f', step=0.01)
+        tip = st.number_input("💵 Tip", min_value=0.0, format='%.2f', step=0.01)
+        st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Submit button with custom styling
+    col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
+    with col_btn2:
+        submitted = st.form_submit_button("✅ Add Sale", use_container_width=True, type="primary")
 
 
 if submitted:
@@ -125,9 +175,9 @@ if submitted:
 
 
     if response.data:
-        st.success("Sale added!")
+        st.success("✅ Sale added successfully!")
     else:
-        st.error("Failed to add sale.")
+        st.error("❌ Failed to add sale.")
         st.write(response)  # Optional for debugging
 
 
@@ -137,9 +187,9 @@ df = pd.DataFrame(response.data) if response.data else pd.DataFrame()
 
 
 if df.empty:
-    st.info('No data yet. Add your first sale above.')
+    st.info('📭 No data yet. Add your first sale above.')
 else:
-    st.sidebar.header('Filter')
+    st.sidebar.header('🔍 Filter')
     # Parse 'date' as datetime
     df['date'] = pd.to_datetime(df['date'], errors='coerce')
     # Ensure numeric columns are float
@@ -358,11 +408,14 @@ else:
             edit_col1, edit_col2 = st.columns(2)
             
             with edit_col1:
+                st.markdown("<div style='background-color: #f8f9fa; padding: 1rem; border-radius: 8px;'>", unsafe_allow_html=True)
                 new_loc = st.text_input("📍 Location", value=str(edit_row['location'].values[0]), key=f'edit_loc_{selected_id}')
                 new_cost = st.number_input("💰 Cost of Item", min_value=0.0, value=float(edit_row['cost_of_item'].values[0]), format='%.2f', key=f'edit_cost_{selected_id}')
                 new_fee = st.number_input("🚚 Delivery Fee", min_value=0.0, value=float(edit_row['delivery_fee'].values[0]), format='%.2f', key=f'edit_fee_{selected_id}')
+                st.markdown("</div>", unsafe_allow_html=True)
             
             with edit_col2:
+                st.markdown("<div style='background-color: #f8f9fa; padding: 1rem; border-radius: 8px;'>", unsafe_allow_html=True)
                 new_tip = st.number_input("💵 Tip", min_value=0.0, value=float(edit_row['tip'].values[0]), format='%.2f', key=f'edit_tip_{selected_id}')
                 selected_mode = edit_row['payment_mode'].values[0]
                 if selected_mode in PAYMENT_CHOICES:
@@ -370,6 +423,7 @@ else:
                 else:
                     default_index = 0
                 new_mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES, index=default_index, key=f'edit_mode_{selected_id}')
+                st.markdown("</div>", unsafe_allow_html=True)
 
             # Calculate based on payment mode
             if new_mode == 'All to Company (MoMo/Bank)':
