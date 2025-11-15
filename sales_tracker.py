@@ -4,7 +4,6 @@ from datetime import datetime
 from supabase import create_client, Client
 
 
-
 # --- Configure page layout ---
 st.set_page_config(
     page_title="Daily Sales Tracker - Mannequins Ghana",
@@ -12,7 +11,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
 
 # --- Custom CSS to maximize vertical footprint ---
 st.markdown(
@@ -38,36 +36,9 @@ st.markdown(
         margin-bottom: 0.5rem;
     }
     
-    /* ===== IMPROVED TABLE STYLING ===== */
-    /* Minimalistic table with clean borders */
+    /* Improve dataframe height */
     [data-testid="stDataFrame"] {
         height: auto;
-    }
-    
-    [data-testid="stDataFrame"] tbody tr {
-        border-bottom: 1px solid #e8e8e8 !important;
-        background-color: #ffffff !important;
-    }
-    
-    [data-testid="stDataFrame"] tbody tr:hover {
-        background-color: #f5f5f5 !important;
-    }
-    
-    [data-testid="stDataFrame"] thead th {
-        background-color: #f8f9fa !important;
-        color: #4B6EAF !important;
-        border-bottom: 2px solid #4B6EAF !important;
-        font-weight: 600 !important;
-        padding: 0.75rem !important;
-        text-align: left !important;
-        font-size: 0.95rem !important;
-    }
-    
-    [data-testid="stDataFrame"] tbody td {
-        padding: 0.75rem !important;
-        font-size: 0.9rem !important;
-        color: #333333 !important;
-        border-right: none !important;
     }
     
     /* Reduce expander margins */
@@ -111,12 +82,10 @@ st.markdown(
 )
 
 
-
 # Initialize Supabase client
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
-
 
 
 # --- Title and subtitle
@@ -134,13 +103,11 @@ st.markdown(
 )
 
 
-
 PAYMENT_CHOICES = [
     'All to Company (MoMo/Bank)',
     'All to Rider (Cash)',
     'Split: Item to Company, Delivery+Tip to Rider'
 ]
-
 
 
 # --- Add a sale form with modern styling ---
@@ -155,7 +122,6 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
 
 with st.form("sale_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
@@ -180,7 +146,6 @@ with st.form("sale_form", clear_on_submit=True):
         submitted = st.form_submit_button("✅ Add Sale", use_container_width=True, type="primary")
 
 
-
 if submitted:
     if mode == 'All to Company (MoMo/Bank)':
         company_gets = 0.0
@@ -196,7 +161,6 @@ if submitted:
         rider_gets = 0.0
 
 
-
     data = {
         "date": date.strftime('%Y-%m-%d'),
         "location": location,
@@ -210,7 +174,6 @@ if submitted:
     response = supabase.table("sales").insert(data).execute()
 
 
-
     if response.data:
         st.success("✅ Sale added successfully!")
     else:
@@ -218,11 +181,9 @@ if submitted:
         st.write(response)  # Optional for debugging
 
 
-
 # --- Fetch all sales ---
 response = supabase.table("sales").select("*").order("date", desc=True).execute()
 df = pd.DataFrame(response.data) if response.data else pd.DataFrame()
-
 
 
 if df.empty:
@@ -234,7 +195,6 @@ else:
     # Ensure numeric columns are float
     for col in ['cost_of_item', 'delivery_fee', 'tip', 'company_gets', 'rider_gets']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
-
 
 
     # --- Date range filter using only dates present in data ---
@@ -249,11 +209,9 @@ else:
         start_date, end_date = None, None
 
 
-
     # Other filters
     locations = st.sidebar.multiselect('Locations', sorted(df['location'].dropna().unique()), default=None)
     payment_modes = st.sidebar.multiselect('Payment Mode', PAYMENT_CHOICES, default=None)
-
 
 
     # Filter logic using only dates available in data
@@ -268,41 +226,32 @@ else:
         filtered = pd.DataFrame()
 
 
-
     filtered_display = filtered.copy()
     if not filtered_display.empty:
         filtered_display['date'] = filtered_display['date'].dt.strftime('%a, %d/%m/%Y')
         filtered_display = filtered_display.rename(columns=lambda x: ' '.join(word.capitalize() for word in x.split('_')))
         
-        # Clean minimalistic header for filtered sales
+        # Modern styled header for filtered sales
         st.markdown(
             """
-            <div style='margin: 1.5rem 0 1rem 0;'>
-                <h3 style='color:#4B6EAF; font-weight:700; margin: 0; font-size: 1.3rem;'>
-                    📊 Sales Records
+            <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                        padding: 1rem; border-radius: 10px; margin-bottom: 0.8rem; margin-top: 0.5rem;'>
+                <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
+                    📊 Filtered Sales Records
                 </h3>
-                <p style='color:#999; font-size:0.9rem; margin: 0.25rem 0 0 0;'>
-                    Showing {count} {word}
-                </p>
             </div>
-            """.format(count=len(filtered_display), word="record" if len(filtered_display) == 1 else "records"),
+            """,
             unsafe_allow_html=True
         )
-        
-        # Display table with improved styling
-        st.dataframe(
-            filtered_display.reset_index(drop=True),
-            use_container_width=True,
-            height=min(400, 32 + (len(filtered_display) * 35))  # Dynamic height
-        )
-
+        st.dataframe(filtered_display.reset_index(drop=True), use_container_width=True, height=300)
 
         # Modern styled header for summary statistics
         st.markdown(
             """
-            <div style='margin: 2rem 0 1rem 0;'>
-                <h3 style='color:#4B6EAF; font-weight:700; margin: 0; font-size: 1.3rem;'>
-                    💹 Summary
+            <div style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
+                        padding: 1rem; border-radius: 10px; margin: 0.8rem 0;'>
+                <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
+                    💹 Summary Statistics
                 </h3>
             </div>
             """,
@@ -315,44 +264,39 @@ else:
             <style>
             .metric-container {
                 display: flex;
-                gap: 12px;
+                gap: 10px;
                 margin-bottom: 10px;
-                flex-wrap: wrap;
             }
             .metric-card {
                 flex: 1;
-                min-width: 160px;
-                background: #f8f9fa;
-                padding: 1.25rem;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                padding: 1.5rem;
                 border-radius: 8px;
-                border-left: 4px solid #4B6EAF;
-                text-align: left;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+                color: white;
+                text-align: center;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             }
             .metric-card:nth-child(2) {
-                border-left-color: #f5576c;
+                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             }
             .metric-card:nth-child(3) {
-                border-left-color: #00f2fe;
+                background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             }
             .metric-card:nth-child(4) {
-                border-left-color: #43e97b;
+                background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
             }
             .metric-card:nth-child(5) {
-                border-left-color: #fee140;
+                background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
             }
             .metric-label {
-                font-size: 0.8rem;
-                color: #999;
+                font-size: 0.85rem;
+                opacity: 0.9;
                 margin-bottom: 0.5rem;
                 font-weight: 600;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
             }
             .metric-value {
-                font-size: 1.6rem;
+                font-size: 1.8rem;
                 font-weight: 700;
-                color: #4B6EAF;
             }
             </style>
             """,
@@ -365,7 +309,7 @@ else:
             st.markdown(
                 f"""
                 <div class='metric-card'>
-                    <div class='metric-label'>🚚 Delivery</div>
+                    <div class='metric-label'>🚚 Delivery Fees</div>
                     <div class='metric-value'>₵{filtered['delivery_fee'].sum():.2f}</div>
                 </div>
                 """,
@@ -376,7 +320,7 @@ else:
             st.markdown(
                 f"""
                 <div class='metric-card'>
-                    <div class='metric-label'>💰 Items</div>
+                    <div class='metric-label'>💰 Item Cost</div>
                     <div class='metric-value'>₵{filtered['cost_of_item'].sum():.2f}</div>
                 </div>
                 """,
@@ -419,12 +363,12 @@ else:
         st.warning("⚠️ No records for selected filter combination.")
 
 
-
     # --- Edit/delete section with modern styling ---
     st.markdown(
         """
-        <div style='margin: 2rem 0 1rem 0;'>
-            <h3 style='color:#4B6EAF; font-weight:700; margin: 0; font-size: 1.3rem;'>
+        <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    padding: 1rem; border-radius: 10px; margin: 0.8rem 0;'>
+            <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
                 🔧 Manage Records
             </h3>
         </div>
@@ -457,7 +401,6 @@ else:
             edit_row_display = edit_row_display.rename(columns=lambda x: ' '.join(word.capitalize() for word in x.split('_')))
             st.dataframe(edit_row_display, use_container_width=True)
 
-
             st.markdown("---")
             st.markdown("#### ✏️ Edit Record Details")
             
@@ -482,7 +425,6 @@ else:
                 new_mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES, index=default_index, key=f'edit_mode_{selected_id}')
                 st.markdown("</div>", unsafe_allow_html=True)
 
-
             # Calculate based on payment mode
             if new_mode == 'All to Company (MoMo/Bank)':
                 company_gets = 0.0
@@ -496,7 +438,6 @@ else:
             else:
                 company_gets = 0.0
                 rider_gets = 0.0
-
 
             st.markdown("---")
             
@@ -521,7 +462,6 @@ else:
                     else:
                         st.error("❌ Failed to update record.")
                         st.write(response)
-
 
             with btn_col2:
                 if st.button("🗑️ Delete Record", type="secondary", use_container_width=True):
