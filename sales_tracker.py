@@ -4,6 +4,7 @@ from datetime import datetime
 from supabase import create_client, Client
 
 
+
 # --- Configure page layout ---
 st.set_page_config(
     page_title="Daily Sales Tracker - Mannequins Ghana",
@@ -11,6 +12,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
 
 # --- Custom CSS to maximize vertical footprint ---
 st.markdown(
@@ -82,10 +84,12 @@ st.markdown(
 )
 
 
+
 # Initialize Supabase client
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
+
 
 
 # --- Title and subtitle
@@ -103,11 +107,13 @@ st.markdown(
 )
 
 
+
 PAYMENT_CHOICES = [
     'All to Company (MoMo/Bank)',
     'All to Rider (Cash)',
     'Split: Item to Company, Delivery+Tip to Rider'
 ]
+
 
 
 # --- Add a sale form with modern styling ---
@@ -122,6 +128,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 with st.form("sale_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
@@ -146,6 +153,7 @@ with st.form("sale_form", clear_on_submit=True):
         submitted = st.form_submit_button("✅ Add Sale", use_container_width=True, type="primary")
 
 
+
 if submitted:
     if mode == 'All to Company (MoMo/Bank)':
         company_gets = 0.0
@@ -161,6 +169,7 @@ if submitted:
         rider_gets = 0.0
 
 
+
     data = {
         "date": date.strftime('%Y-%m-%d'),
         "location": location,
@@ -174,6 +183,7 @@ if submitted:
     response = supabase.table("sales").insert(data).execute()
 
 
+
     if response.data:
         st.success("✅ Sale added successfully!")
     else:
@@ -181,9 +191,11 @@ if submitted:
         st.write(response)  # Optional for debugging
 
 
+
 # --- Fetch all sales ---
 response = supabase.table("sales").select("*").order("date", desc=True).execute()
 df = pd.DataFrame(response.data) if response.data else pd.DataFrame()
+
 
 
 if df.empty:
@@ -195,6 +207,7 @@ else:
     # Ensure numeric columns are float
     for col in ['cost_of_item', 'delivery_fee', 'tip', 'company_gets', 'rider_gets']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
+
 
 
     # --- Date range filter using only dates present in data ---
@@ -209,9 +222,11 @@ else:
         start_date, end_date = None, None
 
 
+
     # Other filters
     locations = st.sidebar.multiselect('Locations', sorted(df['location'].dropna().unique()), default=None)
     payment_modes = st.sidebar.multiselect('Payment Mode', PAYMENT_CHOICES, default=None)
+
 
 
     # Filter logic using only dates available in data
@@ -226,24 +241,16 @@ else:
         filtered = pd.DataFrame()
 
 
+
     filtered_display = filtered.copy()
     if not filtered_display.empty:
         filtered_display['date'] = filtered_display['date'].dt.strftime('%a, %d/%m/%Y')
         filtered_display = filtered_display.rename(columns=lambda x: ' '.join(word.capitalize() for word in x.split('_')))
         
-        # Modern styled header for filtered sales
-        st.markdown(
-            """
-            <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                        padding: 1rem; border-radius: 10px; margin-bottom: 0.8rem; margin-top: 0.5rem;'>
-                <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
-                    📊 Filtered Sales Records
-                </h3>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-        st.dataframe(filtered_display.reset_index(drop=True), use_container_width=True, height=300)
+        # Collapsible section for filtered sales records
+        with st.expander("📊 Filtered Sales Records", expanded=True):
+            st.dataframe(filtered_display.reset_index(drop=True), use_container_width=True, height=300)
+
 
         # Modern styled header for summary statistics
         st.markdown(
@@ -363,6 +370,7 @@ else:
         st.warning("⚠️ No records for selected filter combination.")
 
 
+
     # --- Edit/delete section with modern styling ---
     st.markdown(
         """
@@ -401,6 +409,7 @@ else:
             edit_row_display = edit_row_display.rename(columns=lambda x: ' '.join(word.capitalize() for word in x.split('_')))
             st.dataframe(edit_row_display, use_container_width=True)
 
+
             st.markdown("---")
             st.markdown("#### ✏️ Edit Record Details")
             
@@ -425,6 +434,7 @@ else:
                 new_mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES, index=default_index, key=f'edit_mode_{selected_id}')
                 st.markdown("</div>", unsafe_allow_html=True)
 
+
             # Calculate based on payment mode
             if new_mode == 'All to Company (MoMo/Bank)':
                 company_gets = 0.0
@@ -438,6 +448,7 @@ else:
             else:
                 company_gets = 0.0
                 rider_gets = 0.0
+
 
             st.markdown("---")
             
@@ -462,6 +473,7 @@ else:
                     else:
                         st.error("❌ Failed to update record.")
                         st.write(response)
+
 
             with btn_col2:
                 if st.button("🗑️ Delete Record", type="secondary", use_container_width=True):
