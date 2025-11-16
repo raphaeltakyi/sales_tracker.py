@@ -15,42 +15,43 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Remove top padding and margins */
-    .main { padding-top: 0rem; }
-    .block-container {
-        padding-top: 1rem;
-        padding-bottom: 0rem;
-        padding-left: 1rem;
-        padding-right: 1rem;
-        max-width: 100%;
+    /* ... previous CSS ... (keep as before) ... */
+
+    .metric-container {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
     }
-    h1, h2, h3 {
-        margin-top: 0.5rem;
+    .metric-card {
+        flex: 1;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 1.5rem;
+        border-radius: 8px;
+        color: white;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .metric-card:nth-child(2) {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    .metric-card:nth-child(3) {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    .metric-card:nth-child(4) {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+    .metric-card:nth-child(5) {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+    .metric-label {
+        font-size: 0.85rem;
+        opacity: 0.9;
         margin-bottom: 0.5rem;
+        font-weight: 600;
     }
-    [data-testid="stDataFrame"] { height: auto; }
-    .streamlit-expanderHeader { padding: 0.5rem 0rem; }
-    .stMarkdown { margin-bottom: 0.5rem; }
-    .stTextInput > div > div > input,
-    .stNumberInput > div > div > input,
-    .stSelectbox > div > div > div {
-        border-radius: 8px !important;
-        border: 2px solid #e0e0e0 !important;
-        padding: 0.75rem !important;
-        font-size: 1rem !important;
-    }
-    .stTextInput > div > div > input:focus,
-    .stNumberInput > div > div > input:focus {
-        border: 2px solid #667eea !important;
-        box-shadow: 0 0 10px rgba(102, 126, 234, 0.2) !important;
-    }
-    .stTextInput > label,
-    .stNumberInput > label,
-    .stSelectbox > label,
-    .stDateInput > label {
-        font-weight: 600 !important;
-        color: #4B6EAF !important;
-        font-size: 0.95rem !important;
+    .metric-value {
+        font-size: 1.8rem;
+        font-weight: 700;
     }
     </style>
     """,
