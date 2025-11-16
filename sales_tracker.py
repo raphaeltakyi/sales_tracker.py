@@ -3,27 +3,66 @@ import pandas as pd
 from datetime import datetime
 from supabase import create_client, Client
 
-# --- Page and Styling ---
+# --- Configure page layout ---
 st.set_page_config(
     page_title="Daily Sales Tracker - Mannequins Ghana",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
-with open('custom_styles.css') as f:
-    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)  # Move CSS to a file for clarity
 
-# --- Initialize Supabase ---
-supabase: Client = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
+# --- Custom CSS (now inline, no external file needed) ---
+st.markdown(
+    """
+    <style>
+    /* Remove top padding and margins */
+    .main { padding-top: 0rem; }
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 0rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        max-width: 100%;
+    }
+    h1, h2, h3 {
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    [data-testid="stDataFrame"] { height: auto; }
+    .streamlit-expanderHeader { padding: 0.5rem 0rem; }
+    .stMarkdown { margin-bottom: 0.5rem; }
+    .stTextInput > div > div > input,
+    .stNumberInput > div > div > input,
+    .stSelectbox > div > div > div {
+        border-radius: 8px !important;
+        border: 2px solid #e0e0e0 !important;
+        padding: 0.75rem !important;
+        font-size: 1rem !important;
+    }
+    .stTextInput > div > div > input:focus,
+    .stNumberInput > div > div > input:focus {
+        border: 2px solid #667eea !important;
+        box-shadow: 0 0 10px rgba(102, 126, 234, 0.2) !important;
+    }
+    .stTextInput > label,
+    .stNumberInput > label,
+    .stSelectbox > label,
+    .stDateInput > label {
+        font-weight: 600 !important;
+        color: #4B6EAF !important;
+        font-size: 0.95rem !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
-# --- Constants ---
+# --- Constants & Helper Functions ---
 PAYMENT_CHOICES = [
     'All to Company (MoMo/Bank)',
     'All to Rider (Cash)',
     'Split: Item to Company, Delivery+Tip to Rider'
 ]
-
-# --- Helper Functions ---
 def compute_shares(mode, cost, fee, tip):
     if mode == PAYMENT_CHOICES[0]:
         return 0.0, fee + tip
@@ -32,7 +71,6 @@ def compute_shares(mode, cost, fee, tip):
     if mode == PAYMENT_CHOICES[2]:
         return 0.0, 0.0
     return 0.0, 0.0
-
 def style_card(label, value, emoji=""):
     return f"""
         <div class='metric-card'>
@@ -40,20 +78,29 @@ def style_card(label, value, emoji=""):
             <div class='metric-value'>₵{value:.2f}</div>
         </div>
     """
-
 def get_filtered(df, start_date, end_date, locs, pmodes):
     mask = (df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)
     if locs: mask &= df['location'].isin(locs)
     if pmodes: mask &= df['payment_mode'].isin(pmodes)
     return df[mask]
 
-# --- Header ---
-st.markdown("""
-<h1 style='text-align:center; color:#4B6EAF; font-weight:700;'>Daily Sales Tracker - Mannequins Ghana</h1>
-<p style='text-align:center; font-size:1rem; color:#6c757d;margin-bottom: 1.5rem;'>Built with Love from Kofi ❤️</p>
-""", unsafe_allow_html=True)
+# --- Initialize Supabase client ---
+supabase: Client = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
-# --- Add Sale Form ---
+# --- Title and subtitle
+st.markdown(
+    """
+    <h1 style='text-align:center; color:#4B6EAF; font-weight:700; font-family: Arial, sans-serif; margin-top: 0;'>
+        Daily Sales Tracker - Mannequins Ghana
+    </h1>
+    <p style='text-align:center; font-size:1rem; color:#6c757d; font-family: Arial, sans-serif; margin-bottom: 1.5rem;'>
+        Built with Love from Kofi ❤️
+    </p>
+    """, 
+    unsafe_allow_html=True
+)
+
+# --- Add a sale form ---
 with st.form("sale_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     with col1:
@@ -81,7 +128,7 @@ if submitted:
     response = supabase.table("sales").insert(data).execute()
     st.success("✅ Sale added successfully!") if response.data else st.error("❌ Failed to add sale.")
 
-# --- Fetch and Parse Data ---
+# --- Fetch and Parse Sales Data ---
 response = supabase.table("sales").select("*").order("date", desc=True).execute()
 df = pd.DataFrame(response.data) if response.data else pd.DataFrame()
 
