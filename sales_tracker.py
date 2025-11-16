@@ -47,23 +47,10 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Initialize Supabase client
+# Initialize Supabase client (replace with your secrets)
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
-
-# --- Title and subtitle
-st.markdown(
-    """
-    <h1 style='text-align:center; color:#4B6EAF; font-weight:700; font-family: Arial, sans-serif; margin-top: 0;'>
-        Daily Sales Tracker - Mannequins Ghana
-    </h1>
-    <p style='text-align:center; font-size:1rem; color:#6c757d; font-family: Arial, sans-serif; margin-bottom: 1.5rem;'>
-        Built with Love from Kofi ❤️
-    </p>
-    """, 
-    unsafe_allow_html=True,
-)
 
 PAYMENT_CHOICES = [
     'All to Company (MoMo/Bank)',
@@ -71,31 +58,36 @@ PAYMENT_CHOICES = [
     'Split: Item to Company, Delivery+Tip to Rider'
 ]
 
+# --- Title and subtitle
+st.markdown("""
+    <h1 style='text-align:center; color:#4B6EAF; font-weight:700; font-family: Arial, sans-serif; margin-top: 0;'>
+        Daily Sales Tracker - Mannequins Ghana
+    </h1>
+    <p style='text-align:center; font-size:1rem; color:#6c757d; font-family: Arial, sans-serif; margin-bottom: 1.5rem;'>
+        Built with Love from Kofi ❤️
+    </p>
+    """, unsafe_allow_html=True)
+
 # --- Add a sale form with modern styling ---
-st.markdown(
-    """
-    <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+st.markdown("""
+    <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 padding: 0.5rem; border-radius: 10px; margin-bottom: 1rem;'>
         <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
             ➕ Add New Sale
         </h3>
     </div>
-    """,
-    unsafe_allow_html=True
-)
+    """, unsafe_allow_html=True)
 
 with st.form("sale_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     with col1:
-        with st.container(border=True):
-            date = st.date_input("📅 Date", datetime.now())
-            location = st.text_input("📍 Location", placeholder="Enter location")
-            mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES)
+        date = st.date_input("📅 Date", datetime.now())
+        location = st.text_input("📍 Location", placeholder="Enter location")
+        mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES)
     with col2:
-        with st.container(border=True):
-            cost = st.number_input("💰 Cost of Item", min_value=0.0, format='%.2f', step=0.01)
-            fee = st.number_input("🚚 Delivery Fee", min_value=0.0, format='%.2f', step=0.01)
-            tip = st.number_input("💵 Tip", min_value=0.0, format='%.2f', step=0.01)
+        cost = st.number_input("💰 Cost of Item", min_value=0.0, format='%.2f', step=0.01)
+        fee = st.number_input("🚚 Delivery Fee", min_value=0.0, format='%.2f', step=0.01)
+        tip = st.number_input("💵 Tip", min_value=0.0, format='%.2f', step=0.01)
     col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
     with col_btn2:
         submitted = st.form_submit_button("✅ Add Sale", use_container_width=True, type="primary")
@@ -129,9 +121,9 @@ if submitted:
         st.success("✅ Sale added successfully!")
     else:
         st.error("❌ Failed to add sale.")
-        st.write(response)  # Optional for debugging
+        st.write(response)
 
-# --- Fetch all sales ---
+# --- Fetch sales records ---
 response = supabase.table("sales").select("*").order("date", desc=True).execute()
 df = pd.DataFrame(response.data) if response.data else pd.DataFrame()
 
@@ -170,34 +162,26 @@ else:
     if not filtered_display.empty:
         filtered_display['date'] = filtered_display['date'].dt.strftime('%a, %d/%m/%Y')
         filtered_display = filtered_display.rename(columns=lambda x: ' '.join(word.capitalize() for word in x.split('_')))
-        
-        st.markdown(
-            """
-            <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+        st.markdown("""
+            <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                         padding: 0.3rem; border-radius: 10px; margin: 1rem 0;'>
                 <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
                     📊 Filtered Sales Records
                 </h3>
             </div>
-            """,
-            unsafe_allow_html=True
-        )
+            """, unsafe_allow_html=True)
         with st.expander("View Table", expanded=True):
             st.dataframe(filtered_display.reset_index(drop=True), use_container_width=True, height=300)
 
-        st.markdown(
-            """
-            <div style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
+        st.markdown("""
+            <div style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
                         padding: 0.3rem; border-radius: 10px; margin: 1rem 0;'>
                 <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
                     💹 Summary Statistics
                 </h3>
             </div>
-            """,
-            unsafe_allow_html=True
-        )
-        st.markdown(
-            """
+            """, unsafe_allow_html=True)
+        st.markdown("""
             <style>
             .metric-container { display: flex; gap: 10px; margin-bottom: 10px; }
             .metric-card {
@@ -216,89 +200,64 @@ else:
             .metric-label { font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem; font-weight: 600; }
             .metric-value { font-size: 1.8rem; font-weight: 700; }
             </style>
-            """,
-            unsafe_allow_html=True
-        )
-
-        # ---- Corrected comma formatting for summary cards ----
+            """, unsafe_allow_html=True)
         col_sum1, col_sum2, col_sum3, col_sum4, col_sum5 = st.columns(5)
         with col_sum1:
-            st.markdown(
-                f"""
+            st.markdown(f"""
                 <div class='metric-card'>
                     <div class='metric-label'>🚚 Delivery Fees</div>
                     <div class='metric-value'>₵{filtered['delivery_fee'].sum():,.2f}</div>
                 </div>
-                """,
-                unsafe_allow_html=True
-            )
+                """, unsafe_allow_html=True)
         with col_sum2:
-            st.markdown(
-                f"""
+            st.markdown(f"""
                 <div class='metric-card'>
                     <div class='metric-label'>💰 Item Cost</div>
                     <div class='metric-value'>₵{filtered['cost_of_item'].sum():,.2f}</div>
                 </div>
-                """,
-                unsafe_allow_html=True
-            )
+                """, unsafe_allow_html=True)
         with col_sum3:
-            st.markdown(
-                f"""
+            st.markdown(f"""
                 <div class='metric-card'>
                     <div class='metric-label'>💵 Tips</div>
                     <div class='metric-value'>₵{filtered['tip'].sum():,.2f}</div>
                 </div>
-                """,
-                unsafe_allow_html=True
-            )
+                """, unsafe_allow_html=True)
         with col_sum4:
-            st.markdown(
-                f"""
+            st.markdown(f"""
                 <div class='metric-card'>
                     <div class='metric-label'>🏢 Company</div>
                     <div class='metric-value'>₵{filtered['company_gets'].sum():,.2f}</div>
                 </div>
-                """,
-                unsafe_allow_html=True
-            )
+                """, unsafe_allow_html=True)
         with col_sum5:
-            st.markdown(
-                f"""
+            st.markdown(f"""
                 <div class='metric-card'>
                     <div class='metric-label'>🚴 Rider</div>
                     <div class='metric-value'>₵{filtered['rider_gets'].sum():,.2f}</div>
                 </div>
-                """,
-                unsafe_allow_html=True
-            )
+                """, unsafe_allow_html=True)
     else:
         st.warning("⚠️ No records for selected filter combination.")
 
     # --- Edit/delete section with modern styling ---
-    st.markdown(
-        """
-        <div style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
+    st.markdown("""
+        <div style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
                     padding: 0.3rem; border-radius: 10px; margin: 1rem 0;'>
             <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
                 🔧 Manage Records
             </h3>
         </div>
-        """,
-        unsafe_allow_html=True
-    )
+        """, unsafe_allow_html=True)
     with st.expander("📝 Edit or Delete a Sale Record", expanded=False):
-        st.markdown(
-            """
+        st.markdown("""
             <style>
             .stNumberInput > label, .stTextInput > label, .stSelectbox > label {
                 font-weight: 600;
                 color: #4B6EAF;
             }
             </style>
-            """,
-            unsafe_allow_html=True
-        )
+            """, unsafe_allow_html=True)
         selected_id = st.number_input("🔍 Enter Sale ID", min_value=1, step=1, key='select_id', help="Enter the ID of the record you want to edit or delete")
         edit_row = filtered[filtered['id'] == selected_id]
         if not edit_row.empty:
@@ -309,23 +268,18 @@ else:
             st.dataframe(edit_row_display, use_container_width=True)
             st.markdown("---")
             st.markdown("#### ✏️ Edit Record Details")
+            st.markdown("<div style='background-color: #f8f9fa; padding: 1rem; border-radius: 10px;'>", unsafe_allow_html=True)
             edit_col1, edit_col2 = st.columns(2)
             with edit_col1:
-                st.markdown("<div style='background-color: #f8f9fa; padding: 1rem; border-radius: 8px;'>", unsafe_allow_html=True)
                 new_loc = st.text_input("📍 Location", value=str(edit_row['location'].values[0]), key=f'edit_loc_{selected_id}')
                 new_cost = st.number_input("💰 Cost of Item", min_value=0.0, value=float(edit_row['cost_of_item'].values[0]), format='%.2f', key=f'edit_cost_{selected_id}')
                 new_fee = st.number_input("🚚 Delivery Fee", min_value=0.0, value=float(edit_row['delivery_fee'].values[0]), format='%.2f', key=f'edit_fee_{selected_id}')
-                st.markdown("</div>", unsafe_allow_html=True)
             with edit_col2:
-                st.markdown("<div style='background-color: #f8f9fa; padding: 1rem; border-radius: 8px;'>", unsafe_allow_html=True)
                 new_tip = st.number_input("💵 Tip", min_value=0.0, value=float(edit_row['tip'].values[0]), format='%.2f', key=f'edit_tip_{selected_id}')
                 selected_mode = edit_row['payment_mode'].values[0]
-                if selected_mode in PAYMENT_CHOICES:
-                    default_index = PAYMENT_CHOICES.index(selected_mode)
-                else:
-                    default_index = 0
+                default_index = PAYMENT_CHOICES.index(selected_mode) if selected_mode in PAYMENT_CHOICES else 0
                 new_mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES, index=default_index, key=f'edit_mode_{selected_id}')
-                st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
             # Calculate based on payment mode
             if new_mode == 'All to Company (MoMo/Bank)':
                 company_gets = 0.0
