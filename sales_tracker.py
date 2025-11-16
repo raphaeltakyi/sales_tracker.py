@@ -75,7 +75,7 @@ PAYMENT_CHOICES = [
 st.markdown(
     """
     <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                padding: 1rem; border-radius: 10px; margin-bottom: 1rem;'>
+                padding: 0.5rem; border-radius: 10px; margin-bottom: 1rem;'>
         <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
             ➕ Add New Sale
         </h3>
@@ -174,7 +174,7 @@ else:
         st.markdown(
             """
             <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                        padding: 0.4rem; border-radius: 10px; margin: 1rem 0;'>
+                        padding: 0.3rem; border-radius: 10px; margin: 1rem 0;'>
                 <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
                     📊 Filtered Sales Records
                 </h3>
@@ -188,7 +188,7 @@ else:
         st.markdown(
             """
             <div style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
-                        padding: 0.4rem; border-radius: 10px; margin: 1rem 0;'>
+                        padding: 0.3rem; border-radius: 10px; margin: 1rem 0;'>
                 <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
                     💹 Summary Statistics
                 </h3>
@@ -279,7 +279,7 @@ else:
     st.markdown(
         """
         <div style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
-                    padding: 0.4rem; border-radius: 10px; margin: 1rem 0;'>
+                    padding: 0.3rem; border-radius: 10px; margin: 1rem 0;'>
             <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
                 🔧 Manage Records
             </h3>
