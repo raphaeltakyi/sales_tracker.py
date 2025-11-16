@@ -11,13 +11,14 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- Custom CSS to maximize vertical footprint ---
+# --- Custom CSS: maximize footprint & dark background for all columns ---
 st.markdown(
     """
     <style>
     .main { padding-top: 0rem; }
     .block-container { padding-top: 1rem; padding-bottom: 0rem; padding-left: 1rem; padding-right: 1rem; max-width: 100%; }
-    h1, h2, h3 { margin-top: 0.5rem; margin-bottom: 0.5rem; }
+    body, .main, .block-container { background-color: #22223b !important; color: #fff; }
+    h1, h2, h3 { margin-top: 0.5rem; margin-bottom: 0.5rem; color: #4B6EAF !important; }
     [data-testid="stDataFrame"] { height: auto; }
     .streamlit-expanderHeader { padding: 0.5rem 0rem; }
     .stMarkdown { margin-bottom: 0.5rem; }
@@ -28,6 +29,8 @@ st.markdown(
         border: 2px solid #e0e0e0 !important;
         padding: 0.75rem !important;
         font-size: 1rem !important;
+        background: #22223b !important;
+        color: #fff !important;
     }
     .stTextInput > div > div > input:focus,
     .stNumberInput > div > div > input:focus {
@@ -47,7 +50,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Initialize Supabase client (replace with your secrets)
+# --- Supabase client ---
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
@@ -58,17 +61,17 @@ PAYMENT_CHOICES = [
     'Split: Item to Company, Delivery+Tip to Rider'
 ]
 
-# --- Title and subtitle
+# --- Title & subtitle ---
 st.markdown("""
     <h1 style='text-align:center; color:#4B6EAF; font-weight:700; font-family: Arial, sans-serif; margin-top: 0;'>
         Daily Sales Tracker - Mannequins Ghana
     </h1>
-    <p style='text-align:center; font-size:1rem; color:#6c757d; font-family: Arial, sans-serif; margin-bottom: 1.5rem;'>
+    <p style='text-align:center; font-size:1rem; color:#aeaee7; font-family: Arial, sans-serif; margin-bottom: 1.5rem;'>
         Built with Love from Kofi ❤️
     </p>
     """, unsafe_allow_html=True)
 
-# --- Add a sale form with modern styling ---
+# --- Add sale form ---
 st.markdown("""
     <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 padding: 0.5rem; border-radius: 10px; margin-bottom: 1rem;'>
@@ -77,7 +80,6 @@ st.markdown("""
         </h3>
     </div>
     """, unsafe_allow_html=True)
-
 with st.form("sale_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     with col1:
@@ -181,6 +183,7 @@ else:
                 </h3>
             </div>
             """, unsafe_allow_html=True)
+        # --- Summary cards ---
         st.markdown("""
             <style>
             .metric-container { display: flex; gap: 10px; margin-bottom: 10px; }
@@ -240,7 +243,7 @@ else:
     else:
         st.warning("⚠️ No records for selected filter combination.")
 
-    # --- Edit/delete section with modern styling ---
+    # --- Edit/delete section with unified dark block (no white) ---
     st.markdown("""
         <div style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
                     padding: 0.3rem; border-radius: 10px; margin: 1rem 0;'>
@@ -268,7 +271,7 @@ else:
             st.dataframe(edit_row_display, use_container_width=True)
             st.markdown("---")
             st.markdown("#### ✏️ Edit Record Details")
-            st.markdown("<div style='background-color: #f8f9fa; padding: 1rem; border-radius: 10px;'>", unsafe_allow_html=True)
+            st.markdown("<div style='background-color: #22223b; padding: 1.5rem 1rem 1.2rem 1rem; border-radius: 12px;'>", unsafe_allow_html=True)
             edit_col1, edit_col2 = st.columns(2)
             with edit_col1:
                 new_loc = st.text_input("📍 Location", value=str(edit_row['location'].values[0]), key=f'edit_loc_{selected_id}')
