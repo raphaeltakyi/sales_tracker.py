@@ -11,25 +11,68 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- Custom CSS (now inline, no external file needed) ---
+# --- Custom CSS with enhanced metric card spacing and padding ---
 st.markdown(
     """
     <style>
-    /* ... previous CSS ... (keep as before) ... */
+    .main { padding-top: 0rem; }
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 0rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        max-width: 100%;
+    }
+    h1, h2, h3 {
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    [data-testid="stDataFrame"] { height: auto; }
+    .streamlit-expanderHeader { padding: 0.5rem 0rem; }
+    .stMarkdown { margin-bottom: 0.5rem; }
+    .stTextInput > div > div > input,
+    .stNumberInput > div > div > input,
+    .stSelectbox > div > div > div {
+        border-radius: 8px !important;
+        border: 2px solid #e0e0e0 !important;
+        padding: 0.75rem !important;
+        font-size: 1rem !important;
+    }
+    .stTextInput > div > div > input:focus,
+    .stNumberInput > div > div > input:focus {
+        border: 2px solid #667eea !important;
+        box-shadow: 0 0 10px rgba(102, 126, 234, 0.2) !important;
+    }
+    .stTextInput > label,
+    .stNumberInput > label,
+    .stSelectbox > label,
+    .stDateInput > label {
+        font-weight: 600 !important;
+        color: #4B6EAF !important;
+        font-size: 0.95rem !important;
+    }
 
+    /* --- Metric Cards for Summary Statistics --- */
     .metric-container {
         display: flex;
-        gap: 10px;
-        margin-bottom: 10px;
+        gap: 2rem;           /* Increased gap between cards */
+        margin-bottom: 2rem; /* Extra space below the row */
+        padding: 1rem 0;     /* Extra padding above/below the cards */
+        justify-content: center;
     }
     .metric-card {
-        flex: 1;
+        flex: 1 1 18%;
+        margin: 0 0.2rem;      /* Small horizontal spacing on each card */
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1.5rem;
-        border-radius: 8px;
+        padding: 2rem 1rem;    /* Increased padding: vertical and horizontal */
+        border-radius: 12px;   /* More rounded cards */
         color: white;
         text-align: center;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+        transition: box-shadow 0.2s;
+    }
+    .metric-card:hover {
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.20);
     }
     .metric-card:nth-child(2) {
         background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
@@ -44,14 +87,16 @@ st.markdown(
         background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
     }
     .metric-label {
-        font-size: 0.85rem;
+        font-size: 1rem;
         opacity: 0.9;
         margin-bottom: 0.5rem;
         font-weight: 600;
+        letter-spacing: 0.5px;
     }
     .metric-value {
-        font-size: 1.8rem;
+        font-size: 2.2rem;
         font-weight: 700;
+        margin-bottom: 0.2rem;
     }
     </style>
     """,
@@ -156,9 +201,9 @@ else:
         st.markdown("<div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);padding: 1rem; border-radius: 10px;' ><h3 style='color: white;text-align: center;'>📊 Filtered Sales Records</h3></div>", unsafe_allow_html=True)
         with st.expander("View Table", expanded=True):
             st.dataframe(filtered_display.reset_index(drop=True), use_container_width=True, height=300)
-        # Summary Statistics
+        # Summary Statistics with metric cards and extra spacing
         st.markdown("<div style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);padding: 1rem; border-radius: 10px;'><h3 style='color: white;text-align: center;'>💹 Summary Statistics</h3></div>", unsafe_allow_html=True)
-        col_sum = st.columns(5)
+        st.markdown("<div class='metric-container'>", unsafe_allow_html=True)
         metrics = [
             ("Delivery Fees", filtered['delivery_fee'].sum(), "🚚"),
             ("Item Cost", filtered['cost_of_item'].sum(), "💰"),
@@ -166,9 +211,9 @@ else:
             ("Company", filtered['company_gets'].sum(), "🏢"),
             ("Rider", filtered['rider_gets'].sum(), "🚴"),
         ]
-        for idx, (label, val, emoji) in enumerate(metrics):
-            with col_sum[idx]:
-                st.markdown(style_card(label, val, emoji), unsafe_allow_html=True)
+        for label, val, emoji in metrics:
+            st.markdown(style_card(label, val, emoji), unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
     else:
         st.warning("⚠️ No records for selected filter combination.")
 
