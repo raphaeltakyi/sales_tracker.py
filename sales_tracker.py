@@ -17,7 +17,7 @@ st.markdown(
     <style>
     .main { padding-top: 0rem; }
     .block-container { padding-top: 1rem; padding-bottom: 0rem; padding-left: 1rem; padding-right: 1rem; max-width: 100%; }
-    h1, h2, h3, h4, h5 { margin-top: 0.3rem; margin-bottom: 0.3rem; }
+    h1, h2, h3 { margin-top: 0.5rem; margin-bottom: 0.5rem; }
     [data-testid="stDataFrame"] { height: auto; }
     .streamlit-expanderHeader { padding: 0.5rem 0rem; }
     .stMarkdown { margin-bottom: 0.5rem; }
@@ -26,13 +26,13 @@ st.markdown(
     .stSelectbox > div > div > div {
         border-radius: 8px !important;
         border: 2px solid #e0e0e0 !important;
-        padding: 0.55rem !important;
-        font-size: 0.98rem !important;
+        padding: 0.75rem !important;
+        font-size: 1rem !important;
     }
     .stTextInput > div > div > input:focus,
     .stNumberInput > div > div > input:focus {
         border: 2px solid #667eea !important;
-        box-shadow: 0 0 10px rgba(102, 126, 234, 0.17) !important;
+        box-shadow: 0 0 10px rgba(102, 126, 234, 0.2) !important;
     }
     .stTextInput > label,
     .stNumberInput > label,
@@ -40,7 +40,7 @@ st.markdown(
     .stDateInput > label {
         font-weight: 600 !important;
         color: #4B6EAF !important;
-        font-size: 0.92rem !important;
+        font-size: 0.95rem !important;
     }
     </style>
     """,
@@ -52,13 +52,13 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
 
-# --- Title and subtitle ---
+# --- Title and subtitle
 st.markdown(
     """
     <h1 style='text-align:center; color:#4B6EAF; font-weight:700; font-family: Arial, sans-serif; margin-top: 0;'>
         Daily Sales Tracker - Mannequins Ghana
     </h1>
-    <p style='text-align:center; font-size:1rem; color:#6c757d; font-family: Arial, sans-serif; margin-bottom: 1.2rem;'>
+    <p style='text-align:center; font-size:1rem; color:#6c757d; font-family: Arial, sans-serif; margin-bottom: 1.5rem;'>
         Built with Love from Kofi ❤️
     </p>
     """, 
@@ -71,14 +71,14 @@ PAYMENT_CHOICES = [
     'Split: Item to Company, Delivery+Tip to Rider'
 ]
 
-# --- Add a sale form with compact styling ---
+# --- Add a sale form with modern styling ---
 st.markdown(
     """
     <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                padding: 0.6rem; border-radius: 8px; margin-bottom: 1rem;'>
-        <h4 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
+                padding: 1rem; border-radius: 10px; margin-bottom: 1rem;'>
+        <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
             ➕ Add New Sale
-        </h4>
+        </h3>
     </div>
     """,
     unsafe_allow_html=True
@@ -87,13 +87,15 @@ st.markdown(
 with st.form("sale_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     with col1:
-        date = st.date_input("📅 Date", datetime.now())
-        location = st.text_input("📍 Location", placeholder="Enter location")
-        mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES)
+        with st.container(border=True):
+            date = st.date_input("📅 Date", datetime.now())
+            location = st.text_input("📍 Location", placeholder="Enter location")
+            mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES)
     with col2:
-        cost = st.number_input("💰 Cost of Item", min_value=0.0, format='%.2f', step=0.01)
-        fee = st.number_input("🚚 Delivery Fee", min_value=0.0, format='%.2f', step=0.01)
-        tip = st.number_input("💵 Tip", min_value=0.0, format='%.2f', step=0.01)
+        with st.container(border=True):
+            cost = st.number_input("💰 Cost of Item", min_value=0.0, format='%.2f', step=0.01)
+            fee = st.number_input("🚚 Delivery Fee", min_value=0.0, format='%.2f', step=0.01)
+            tip = st.number_input("💵 Tip", min_value=0.0, format='%.2f', step=0.01)
     col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
     with col_btn2:
         submitted = st.form_submit_button("✅ Add Sale", use_container_width=True, type="primary")
@@ -172,25 +174,24 @@ else:
         st.markdown(
             """
             <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                        padding: 0.6rem; border-radius: 8px; margin: 0.7rem 0;'>
-                <h4 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
+                        padding: 1rem; border-radius: 10px; margin: 1rem 0;'>
+                <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
                     📊 Filtered Sales Records
-                </h4>
+                </h3>
             </div>
             """,
             unsafe_allow_html=True
         )
         with st.expander("View Table", expanded=True):
-            st.dataframe(filtered_display.reset_index(drop=True), use_container_width=True, height=230)
+            st.dataframe(filtered_display.reset_index(drop=True), use_container_width=True, height=300)
 
-        # ---- Compact Summary Statistics Section ----
         st.markdown(
             """
             <div style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
-                        padding: 0.5rem; border-radius: 7px; margin: 0.5rem 0;'>
-                <h4 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center; font-size:1.05rem;'>
+                        padding: 1rem; border-radius: 10px; margin: 1rem 0;'>
+                <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
                     💹 Summary Statistics
-                </h4>
+                </h3>
             </div>
             """,
             unsafe_allow_html=True
@@ -198,87 +199,133 @@ else:
         st.markdown(
             """
             <style>
-            .metric-row { display: flex; gap: 6px; margin-bottom: 2px; }
+            .metric-container { display: flex; gap: 10px; margin-bottom: 10px; }
             .metric-card {
                 flex: 1;
-                background: linear-gradient(135deg, #f5f6fa 0%, #e1e8ed 100%);
-                padding: 0.6rem 0.2rem;
-                border-radius: 6px;
-                color: #5A5A5A;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                padding: 1.5rem;
+                border-radius: 8px;
+                color: white;
                 text-align: center;
-                font-size: 1.02rem;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.03);
-                min-width: 0;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             }
-            .metric-label { font-size: 0.80rem; font-weight: 500; margin-bottom: 0.35rem; opacity: 0.8; }
-            .metric-value { font-size: 1.07rem; font-weight: 650; }
+            .metric-card:nth-child(2) { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+            .metric-card:nth-child(3) { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+            .metric-card:nth-child(4) { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+            .metric-card:nth-child(5) { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+            .metric-label { font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem; font-weight: 600; }
+            .metric-value { font-size: 1.8rem; font-weight: 700; }
             </style>
-            <div class="metric-row">
             """,
             unsafe_allow_html=True
         )
-        st.markdown(
-            f"""
-            <div class='metric-card'>
-                <div class='metric-label'>🚚 Delivery</div>
-                <div class='metric-value'>₵{filtered['delivery_fee'].sum():,.2f}</div>
-            </div>
-            <div class='metric-card'>
-                <div class='metric-label'>💰 Item</div>
-                <div class='metric-value'>₵{filtered['cost_of_item'].sum():,.2f}</div>
-            </div>
-            <div class='metric-card'>
-                <div class='metric-label'>💵 Tip</div>
-                <div class='metric-value'>₵{filtered['tip'].sum():,.2f}</div>
-            </div>
-            <div class='metric-card'>
-                <div class='metric-label'>🏢 Company</div>
-                <div class='metric-value'>₵{filtered['company_gets'].sum():,.2f}</div>
-            </div>
-            <div class='metric-card'>
-                <div class='metric-label'>🚴 Rider</div>
-                <div class='metric-value'>₵{filtered['rider_gets'].sum():,.2f}</div>
-            </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+
+        # ---- Corrected comma formatting for summary cards ----
+        col_sum1, col_sum2, col_sum3, col_sum4, col_sum5 = st.columns(5)
+        with col_sum1:
+            st.markdown(
+                f"""
+                <div class='metric-card'>
+                    <div class='metric-label'>🚚 Delivery Fees</div>
+                    <div class='metric-value'>₵{filtered['delivery_fee'].sum():,.2f}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        with col_sum2:
+            st.markdown(
+                f"""
+                <div class='metric-card'>
+                    <div class='metric-label'>💰 Item Cost</div>
+                    <div class='metric-value'>₵{filtered['cost_of_item'].sum():,.2f}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        with col_sum3:
+            st.markdown(
+                f"""
+                <div class='metric-card'>
+                    <div class='metric-label'>💵 Tips</div>
+                    <div class='metric-value'>₵{filtered['tip'].sum():,.2f}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        with col_sum4:
+            st.markdown(
+                f"""
+                <div class='metric-card'>
+                    <div class='metric-label'>🏢 Company</div>
+                    <div class='metric-value'>₵{filtered['company_gets'].sum():,.2f}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        with col_sum5:
+            st.markdown(
+                f"""
+                <div class='metric-card'>
+                    <div class='metric-label'>🚴 Rider</div>
+                    <div class='metric-value'>₵{filtered['rider_gets'].sum():,.2f}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
     else:
         st.warning("⚠️ No records for selected filter combination.")
 
-    # ---- Compact Manage Records Section ----
-    with st.expander("🔧 Manage Records", expanded=False):
+    # --- Edit/delete section with modern styling ---
+    st.markdown(
+        """
+        <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    padding: 1rem; border-radius: 10px; margin: 1rem 0;'>
+            <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
+                🔧 Manage Records
+            </h3>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    with st.expander("📝 Edit or Delete a Sale Record", expanded=False):
         st.markdown(
             """
-            <h5 style='color:#4B6EAF;margin-top:-0.7rem;font-family:Arial,sans-serif'>Edit or Delete Sale</h5>
             <style>
             .stNumberInput > label, .stTextInput > label, .stSelectbox > label {
-                font-weight: 500;
+                font-weight: 600;
                 color: #4B6EAF;
-                font-size: 0.97rem;
             }
             </style>
             """,
             unsafe_allow_html=True
         )
-        selected_id = st.number_input("🔍 Sale ID", min_value=1, step=1, key='select_id', help="Enter ID to edit or delete")
+        selected_id = st.number_input("🔍 Enter Sale ID", min_value=1, step=1, key='select_id', help="Enter the ID of the record you want to edit or delete")
         edit_row = filtered[filtered['id'] == selected_id]
         if not edit_row.empty:
-            st.markdown("**Selected Record:**")
+            st.markdown("#### 📄 Selected Record")
             edit_row_display = edit_row.copy()
             edit_row_display['date'] = edit_row_display['date'].dt.strftime('%a, %d/%m/%Y')
             edit_row_display = edit_row_display.rename(columns=lambda x: ' '.join(word.capitalize() for word in x.split('_')))
             st.dataframe(edit_row_display, use_container_width=True)
+            st.markdown("---")
+            st.markdown("#### ✏️ Edit Record Details")
             edit_col1, edit_col2 = st.columns(2)
             with edit_col1:
+                st.markdown("<div style='background-color: #f8f9fa; padding: 1rem; border-radius: 8px;'>", unsafe_allow_html=True)
                 new_loc = st.text_input("📍 Location", value=str(edit_row['location'].values[0]), key=f'edit_loc_{selected_id}')
-                new_cost = st.number_input("💰 Item", min_value=0.0, value=float(edit_row['cost_of_item'].values[0]), format='%.2f', key=f'edit_cost_{selected_id}')
-                new_fee = st.number_input("🚚 Delivery", min_value=0.0, value=float(edit_row['delivery_fee'].values[0]), format='%.2f', key=f'edit_fee_{selected_id}')
+                new_cost = st.number_input("💰 Cost of Item", min_value=0.0, value=float(edit_row['cost_of_item'].values[0]), format='%.2f', key=f'edit_cost_{selected_id}')
+                new_fee = st.number_input("🚚 Delivery Fee", min_value=0.0, value=float(edit_row['delivery_fee'].values[0]), format='%.2f', key=f'edit_fee_{selected_id}')
+                st.markdown("</div>", unsafe_allow_html=True)
             with edit_col2:
+                st.markdown("<div style='background-color: #f8f9fa; padding: 1rem; border-radius: 8px;'>", unsafe_allow_html=True)
                 new_tip = st.number_input("💵 Tip", min_value=0.0, value=float(edit_row['tip'].values[0]), format='%.2f', key=f'edit_tip_{selected_id}')
                 selected_mode = edit_row['payment_mode'].values[0]
-                default_index = PAYMENT_CHOICES.index(selected_mode) if selected_mode in PAYMENT_CHOICES else 0
-                new_mode = st.selectbox("💳 Payment", PAYMENT_CHOICES, index=default_index, key=f'edit_mode_{selected_id}')
+                if selected_mode in PAYMENT_CHOICES:
+                    default_index = PAYMENT_CHOICES.index(selected_mode)
+                else:
+                    default_index = 0
+                new_mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES, index=default_index, key=f'edit_mode_{selected_id}')
+                st.markdown("</div>", unsafe_allow_html=True)
             # Calculate based on payment mode
             if new_mode == 'All to Company (MoMo/Bank)':
                 company_gets = 0.0
@@ -292,9 +339,10 @@ else:
             else:
                 company_gets = 0.0
                 rider_gets = 0.0
-            colA, colB, colC = st.columns([1, 1, 3])
-            with colA:
-                if st.button("✅ Update", type="primary", use_container_width=True):
+            st.markdown("---")
+            btn_col1, btn_col2, btn_col3 = st.columns([1, 1, 2])
+            with btn_col1:
+                if st.button("✅ Update Record", type="primary", use_container_width=True):
                     update_data = {
                         "location": new_loc,
                         "cost_of_item": new_cost,
@@ -306,19 +354,19 @@ else:
                     }
                     response = supabase.table("sales").update(update_data).eq("id", int(selected_id)).execute()
                     if response.data:
-                        st.success("✅ Updated!")
+                        st.success("✅ Record updated successfully!")
                         st.rerun()
                     else:
-                        st.error("❌ Error.")
+                        st.error("❌ Failed to update record.")
                         st.write(response)
-            with colB:
-                if st.button("🗑️ Delete", type="secondary", use_container_width=True):
+            with btn_col2:
+                if st.button("🗑️ Delete Record", type="secondary", use_container_width=True):
                     response = supabase.table("sales").delete().eq("id", int(selected_id)).execute()
                     if response.data:
-                        st.success("🗑️ Deleted!")
+                        st.success("🗑️ Record deleted successfully!")
                         st.rerun()
                     else:
-                        st.error("❌ Error.")
+                        st.error("❌ Failed to delete record.")
                         st.write(response)
         else:
-            st.info("ℹ️ Enter a valid Sale ID above.")
+            st.info("ℹ️ Please enter a valid Sale ID from the filtered records above to edit or delete.")
