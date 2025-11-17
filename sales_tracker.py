@@ -45,25 +45,32 @@ st.markdown(
         font-size: 0.95rem !important;
     }
     
-    .summary-header {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    .section-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         padding: 0.3rem;
         border-radius: 10px;
-        margin: 1rem 0;
+        margin: 1.5rem 0 1rem 0;
     }
     
-    .summary-header h3 {
+    .section-header h3 {
         color: white;
         margin: 0;
         font-family: Arial, sans-serif;
         text-align: center;
     }
     
-    .summary-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin: 1rem 0;
+    .settlement-header {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        padding: 0.3rem;
+        border-radius: 10px;
+        margin: 1rem 0 0.8rem 0;
+    }
+    
+    .settlement-header h3 {
+        color: white;
+        margin: 0;
+        font-family: Arial, sans-serif;
+        text-align: center;
     }
     
     .summary-card {
@@ -106,6 +113,24 @@ st.markdown(
         color: #999;
         margin-top: 0.5rem;
     }
+    
+    .metric-card {
+        flex: 1;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 1.5rem;
+        border-radius: 8px;
+        color: white;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .metric-card:nth-child(2) { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .metric-card:nth-child(3) { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .metric-card:nth-child(4) { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+    .metric-card:nth-child(5) { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+    
+    .metric-label { font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem; font-weight: 600; }
+    .metric-value { font-size: 1.8rem; font-weight: 700; }
     </style>
     """,
     unsafe_allow_html=True
@@ -281,8 +306,64 @@ else:
             st.dataframe(filtered_display.reset_index(drop=True), use_container_width=True, height=300)
 
 
-        # ---- Compact Summary Section ----
-        st.markdown('<div class="summary-header"><h3>💰 Settlement Summary</h3></div>', unsafe_allow_html=True)
+        # ---- Overall Summary Statistics ----
+        st.markdown('<div class="section-header"><h3>📈 Overview</h3></div>', unsafe_allow_html=True)
+        
+        col_sum1, col_sum2, col_sum3, col_sum4, col_sum5 = st.columns(5)
+        with col_sum1:
+            st.markdown(
+                f"""
+                <div class='metric-card'>
+                    <div class='metric-label'>🚚 Delivery Fees</div>
+                    <div class='metric-value'>₵{filtered['delivery_fee'].sum():,.2f}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        with col_sum2:
+            st.markdown(
+                f"""
+                <div class='metric-card'>
+                    <div class='metric-label'>💰 Item Cost</div>
+                    <div class='metric-value'>₵{filtered['cost_of_item'].sum():,.2f}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        with col_sum3:
+            st.markdown(
+                f"""
+                <div class='metric-card'>
+                    <div class='metric-label'>💵 Tips</div>
+                    <div class='metric-value'>₵{filtered['tip'].sum():,.2f}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        with col_sum4:
+            st.markdown(
+                f"""
+                <div class='metric-card'>
+                    <div class='metric-label'>📊 Total Revenue</div>
+                    <div class='metric-value'>₵{(filtered['cost_of_item'].sum() + filtered['delivery_fee'].sum() + filtered['tip'].sum()):,.2f}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        with col_sum5:
+            st.markdown(
+                f"""
+                <div class='metric-card'>
+                    <div class='metric-label'>📦 Transactions</div>
+                    <div class='metric-value'>{len(filtered)}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+
+        # ---- Settlement Summary (Compact) ----
+        st.markdown('<div class="settlement-header"><h3>💸 Settlement</h3></div>', unsafe_allow_html=True)
         
         col1, col2, col3 = st.columns(3)
         
