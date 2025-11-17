@@ -94,30 +94,18 @@ st.markdown(
 
 
 with st.form("sale_form", clear_on_submit=True):
-    # Row 1: Date, Location
     col1, col2 = st.columns(2)
     with col1:
-        date = st.date_input("📅 Date", datetime.now())
+        with st.container(border=True):
+            date = st.date_input("📅 Date", datetime.now())
+            location = st.text_input("📍 Location", placeholder="Enter location")
+            mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES)
     with col2:
-        location = st.text_input("📍 Location", placeholder="Enter location")
-    
-    # Row 2: Cost, Delivery Fee, Tip (3 columns for better spacing)
-    col3, col4, col5 = st.columns(3)
-    with col3:
-        cost = st.number_input("💰 Cost of Item", min_value=0.0, format='%.2f', step=0.01)
-    with col4:
-        fee = st.number_input("🚚 Delivery Fee", min_value=0.0, format='%.2f', step=0.01)
-    with col5:
-        tip = st.number_input("💵 Tip", min_value=0.0, format='%.2f', step=0.01)
-    
-    # Row 3: Payment Mode and Rider (2 columns for better visibility)
-    col6, col7 = st.columns(2)
-    with col6:
-        mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES)
-    with col7:
-        rider = st.selectbox("🚴 Rider", RIDERS)
-    
-    # Row 4: Submit Button
+        with st.container(border=True):
+            cost = st.number_input("💰 Cost of Item", min_value=0.0, format='%.2f', step=0.01)
+            fee = st.number_input("🚚 Delivery Fee", min_value=0.0, format='%.2f', step=0.01)
+            tip = st.number_input("💵 Tip", min_value=0.0, format='%.2f', step=0.01)
+            rider = st.selectbox("🚴 Rider", RIDERS)
     col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
     with col_btn2:
         submitted = st.form_submit_button("✅ Add Sale", use_container_width=True, type="primary")
