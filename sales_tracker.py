@@ -432,7 +432,7 @@ else:
                     rider_default_index = RIDERS.index(current_rider)
                 else:
                     rider_default_index = 0
-                new_rider = st.radio("🚴 Rider", RIDERS, index=rider_default_index, key=f'edit_rider_{selected_id}')
+                new_rider = st.radio("🚴 Rider", RIDERS, , horizontal=True, index=rider_default_index, key=f'edit_rider_{selected_id}')
                 st.markdown("</div>", unsafe_allow_html=True)
             # Calculate based on payment mode
             if new_mode == 'All to Company (MoMo/Bank)':
