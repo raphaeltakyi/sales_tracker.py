@@ -249,9 +249,9 @@ else:
         with col_sum1:
             st.markdown(
                 f"""
-                <div class='metric-card'>
-                    <div class='metric-label'>🚚 Delivery Fees</div>
-                    <div class='metric-value'>₵{filtered['delivery_fee'].sum():,.2f}</div>
+                <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1.5rem; border-radius: 8px; color: white; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);'>
+                    <div style='font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem; font-weight: 600;'>🚚 Delivery Fees</div>
+                    <div style='font-size: 1.8rem; font-weight: 700;'>₵{filtered['delivery_fee'].sum():,.2f}</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -259,9 +259,9 @@ else:
         with col_sum2:
             st.markdown(
                 f"""
-                <div class='metric-card'>
-                    <div class='metric-label'>💰 Item Cost</div>
-                    <div class='metric-value'>₵{filtered['cost_of_item'].sum():,.2f}</div>
+                <div style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 1.5rem; border-radius: 8px; color: white; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);'>
+                    <div style='font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem; font-weight: 600;'>💰 Item Cost</div>
+                    <div style='font-size: 1.8rem; font-weight: 700;'>₵{filtered['cost_of_item'].sum():,.2f}</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -269,9 +269,9 @@ else:
         with col_sum3:
             st.markdown(
                 f"""
-                <div class='metric-card'>
-                    <div class='metric-label'>💵 Tips</div>
-                    <div class='metric-value'>₵{filtered['tip'].sum():,.2f}</div>
+                <div style='background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 1.5rem; border-radius: 8px; color: white; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);'>
+                    <div style='font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem; font-weight: 600;'>💵 Tips</div>
+                    <div style='font-size: 1.8rem; font-weight: 700;'>₵{filtered['tip'].sum():,.2f}</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -279,9 +279,9 @@ else:
         with col_sum4:
             st.markdown(
                 f"""
-                <div class='metric-card'>
-                    <div class='metric-label'>🏢 Company</div>
-                    <div class='metric-value'>₵{filtered['company_gets'].sum():,.2f}</div>
+                <div style='background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); padding: 1.5rem; border-radius: 8px; color: white; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);'>
+                    <div style='font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem; font-weight: 600;'>🏢 Company</div>
+                    <div style='font-size: 1.8rem; font-weight: 700;'>₵{filtered['company_gets'].sum():,.2f}</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -289,9 +289,9 @@ else:
         with col_sum5:
             st.markdown(
                 f"""
-                <div class='metric-card'>
-                    <div class='metric-label'>🚴 Rider (Total)</div>
-                    <div class='metric-value'>₵{filtered['rider_gets'].sum():,.2f}</div>
+                <div style='background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); padding: 1.5rem; border-radius: 8px; color: white; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);'>
+                    <div style='font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem; font-weight: 600;'>🚴 Rider (Total)</div>
+                    <div style='font-size: 1.8rem; font-weight: 700;'>₵{filtered['rider_gets'].sum():,.2f}</div>
                 </div>
                 """,
                 unsafe_allow_html=True
