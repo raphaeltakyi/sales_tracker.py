@@ -78,41 +78,31 @@ PAYMENT_CHOICES = [
     '5. Split: Item to Company, Delivery+Tip to Rider - Justice'
 ]
 
-RIDERS = ['Prince', 'Justice']
-
-
-def get_rider_from_payment_mode(mode):
-    """Extract rider name from payment mode."""
-    if 'Prince' in mode:
-        return 'Prince'
-    elif 'Justice' in mode:
-        return 'Justice'
-    else:
-        return 'Company'
-
 
 def calculate_payment_split(mode, cost, fee, tip):
     """
-    Calculate how much company and rider gets based on payment mode.
+    Calculate how much company, Prince, and Justice get based on payment mode.
     
-    1. All to Company: Company gets (cost + fee + tip), Rider gets 0
-    2. All to Rider - Prince: Company gets 0, Rider Prince gets (cost + fee + tip)
-    3. All to Rider - Justice: Company gets 0, Rider Justice gets (cost + fee + tip)
-    4. Split (Prince): Company gets cost, Rider Prince gets (fee + tip)
-    5. Split (Justice): Company gets cost, Rider Justice gets (fee + tip)
+    Returns: (company_gets, prince_gets, justice_gets)
+    
+    1. All to Company: Company gets (cost + fee + tip)
+    2. All to Rider - Prince: Prince gets (cost + fee + tip)
+    3. All to Rider - Justice: Justice gets (cost + fee + tip)
+    4. Split (Prince): Company gets cost, Prince gets (fee + tip)
+    5. Split (Justice): Company gets cost, Justice gets (fee + tip)
     """
     if mode == '1. All to Company (MoMo/Bank)':
-        return cost + fee + tip, 0.0
+        return cost + fee + tip, 0.0, 0.0
     elif mode == '2. All to Rider - Prince (Cash)':
-        return 0.0, cost + fee + tip
+        return 0.0, cost + fee + tip, 0.0
     elif mode == '3. All to Rider - Justice (Cash)':
-        return 0.0, cost + fee + tip
+        return 0.0, 0.0, cost + fee + tip
     elif mode == '4. Split: Item to Company, Delivery+Tip to Rider - Prince':
-        return cost, fee + tip
+        return cost, fee + tip, 0.0
     elif mode == '5. Split: Item to Company, Delivery+Tip to Rider - Justice':
-        return cost, fee + tip
+        return cost, 0.0, fee + tip
     else:
-        return 0.0, 0.0
+        return 0.0, 0.0, 0.0
 
 
 # --- Add a sale form with modern styling ---
@@ -147,8 +137,7 @@ with st.form("sale_form", clear_on_submit=True):
 
 
 if submitted:
-    company_gets, rider_gets = calculate_payment_split(mode, cost, fee, tip)
-    rider = get_rider_from_payment_mode(mode)
+    company_gets, prince_gets, justice_gets = calculate_payment_split(mode, cost, fee, tip)
 
     data = {
         "date": date.strftime('%Y-%m-%d'),
@@ -157,9 +146,9 @@ if submitted:
         "delivery_fee": fee,
         "tip": tip,
         "payment_mode": mode,
-        "rider": rider,
         "company_gets": company_gets,
-        "rider_gets": rider_gets
+        "prince_gets": prince_gets,
+        "justice_gets": justice_gets
     }
     response = supabase.table("sales").insert(data).execute()
     if response.data:
@@ -179,8 +168,9 @@ if df.empty:
 else:
     st.sidebar.header('🔍 Filter')
     df['date'] = pd.to_datetime(df['date'], errors='coerce')
-    for col in ['cost_of_item', 'delivery_fee', 'tip', 'company_gets', 'rider_gets']:
-        df[col] = pd.to_numeric(df[col], errors='coerce')
+    for col in ['cost_of_item', 'delivery_fee', 'tip', 'company_gets', 'prince_gets', 'justice_gets']:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
 
 
     unique_dates = sorted(df['date'].dt.date.dropna().unique())
@@ -196,7 +186,6 @@ else:
 
     locations = st.sidebar.multiselect('Locations', sorted(df['location'].dropna().unique()), default=None)
     payment_modes = st.sidebar.multiselect('Payment Mode', PAYMENT_CHOICES, default=None)
-    riders = st.sidebar.multiselect('Riders', RIDERS, default=None)
 
 
     if start_date and end_date:
@@ -205,8 +194,6 @@ else:
             mask &= df['location'].isin(locations)
         if payment_modes:
             mask &= df['payment_mode'].isin(payment_modes)
-        if riders:
-            mask &= df['rider'].isin(riders)
         filtered = df[mask]
     else:
         filtered = pd.DataFrame()
@@ -315,7 +302,7 @@ else:
                 f"""
                 <div class='metric-card'>
                     <div class='metric-label'>🚴 Total Riders</div>
-                    <div class='metric-value'>₵{filtered['rider_gets'].sum():,.2f}</div>
+                    <div class='metric-value'>₵{(filtered['prince_gets'].sum() + filtered['justice_gets'].sum()):,.2f}</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -335,25 +322,43 @@ else:
             unsafe_allow_html=True
         )
 
-        for rider in RIDERS:
-            rider_data = filtered[filtered['rider'] == rider]
-            
-            if not rider_data.empty:
-                st.markdown(f"#### {rider}'s Performance")
-                
-                rider_col1, rider_col2, rider_col3, rider_col4 = st.columns(4)
-                with rider_col1:
-                    st.metric(label="🚚 Deliveries", value=f"{len(rider_data)}")
-                with rider_col2:
-                    st.metric(label="💰 Total Earned", value=f"₵{rider_data['rider_gets'].sum():,.2f}")
-                with rider_col3:
-                    st.metric(label="📊 Avg per Delivery", value=f"₵{rider_data['rider_gets'].mean():,.2f}")
-                with rider_col4:
-                    st.metric(label="💵 Tips Received", value=f"₵{rider_data['tip'].sum():,.2f}")
-                
-                st.markdown("---")
-            else:
-                st.info(f"ℹ️ No records for {rider}")
+        # Prince's Performance
+        prince_total = filtered['prince_gets'].sum()
+        prince_transactions = len(filtered[filtered['prince_gets'] > 0])
+        prince_avg = filtered[filtered['prince_gets'] > 0]['prince_gets'].mean() if prince_transactions > 0 else 0
+        prince_tips = filtered['tip'].sum() if prince_total > 0 else 0
+        
+        st.markdown("#### 👤 Prince's Performance")
+        prince_col1, prince_col2, prince_col3, prince_col4 = st.columns(4)
+        with prince_col1:
+            st.metric(label="🚚 Deliveries", value=f"{prince_transactions}")
+        with prince_col2:
+            st.metric(label="💰 Total Earned", value=f"₵{prince_total:,.2f}")
+        with prince_col3:
+            st.metric(label="📊 Avg per Delivery", value=f"₵{prince_avg:,.2f}")
+        with prince_col4:
+            prince_tip_total = filtered[filtered['prince_gets'] > 0]['tip'].sum()
+            st.metric(label="💵 Tips Received", value=f"₵{prince_tip_total:,.2f}")
+        
+        st.markdown("---")
+
+        # Justice's Performance
+        justice_total = filtered['justice_gets'].sum()
+        justice_transactions = len(filtered[filtered['justice_gets'] > 0])
+        justice_avg = filtered[filtered['justice_gets'] > 0]['justice_gets'].mean() if justice_transactions > 0 else 0
+        justice_tips = filtered['tip'].sum() if justice_total > 0 else 0
+        
+        st.markdown("#### 👤 Justice's Performance")
+        justice_col1, justice_col2, justice_col3, justice_col4 = st.columns(4)
+        with justice_col1:
+            st.metric(label="🚚 Deliveries", value=f"{justice_transactions}")
+        with justice_col2:
+            st.metric(label="💰 Total Earned", value=f"₵{justice_total:,.2f}")
+        with justice_col3:
+            st.metric(label="📊 Avg per Delivery", value=f"₵{justice_avg:,.2f}")
+        with justice_col4:
+            justice_tip_total = filtered[filtered['justice_gets'] > 0]['tip'].sum()
+            st.metric(label="💵 Tips Received", value=f"₵{justice_tip_total:,.2f}")
 
     else:
         st.warning("⚠️ No records for selected filter combination.")
@@ -411,8 +416,7 @@ else:
                 new_mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES, index=default_index, key=f'edit_mode_{selected_id}')
                 st.markdown("</div>", unsafe_allow_html=True)
             # Calculate based on payment mode
-            company_gets, rider_gets = calculate_payment_split(new_mode, new_cost, new_fee, new_tip)
-            new_rider = get_rider_from_payment_mode(new_mode)
+            company_gets, prince_gets, justice_gets = calculate_payment_split(new_mode, new_cost, new_fee, new_tip)
             st.markdown("---")
             btn_col1, btn_col2, btn_col3 = st.columns([1, 1, 2])
             with btn_col1:
@@ -423,9 +427,9 @@ else:
                         "delivery_fee": new_fee,
                         "tip": new_tip,
                         "payment_mode": new_mode,
-                        "rider": new_rider,
                         "company_gets": company_gets,
-                        "rider_gets": rider_gets
+                        "prince_gets": prince_gets,
+                        "justice_gets": justice_gets
                     }
                     response = supabase.table("sales").update(update_data).eq("id", int(selected_id)).execute()
                     if response.data:
