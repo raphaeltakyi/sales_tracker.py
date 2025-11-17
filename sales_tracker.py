@@ -290,7 +290,7 @@ else:
             st.markdown(
                 f"""
                 <div class='metric-card'>
-                    <div class='metric-label'>🚴 Company Owes Rider (Total)</div>
+                    <div class='metric-label'>🚴 Company Owes Rider</div>
                     <div class='metric-value'>₵{filtered['rider_gets'].sum():,.2f}</div>
                 </div>
                 """,
