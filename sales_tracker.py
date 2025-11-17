@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime
 from supabase import create_client, Client
 
+
 # --- Configure page layout ---
 st.set_page_config(
     page_title="Daily Sales Tracker - Mannequins Ghana",
@@ -10,6 +11,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
 
 # --- Custom CSS to maximize vertical footprint ---
 st.markdown(
@@ -47,10 +49,12 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+
 # Initialize Supabase client
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
+
 
 # --- Title and subtitle
 st.markdown(
@@ -65,11 +69,15 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
 PAYMENT_CHOICES = [
     'All to Company (MoMo/Bank)',
     'All to Rider (Cash)',
     'Split: Item to Company, Delivery+Tip to Rider'
 ]
+
+RIDERS = ['Prince', 'Justice']
+
 
 # --- Add a sale form with modern styling ---
 st.markdown(
@@ -84,6 +92,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+
 with st.form("sale_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     with col1:
@@ -96,9 +105,11 @@ with st.form("sale_form", clear_on_submit=True):
             cost = st.number_input("💰 Cost of Item", min_value=0.0, format='%.2f', step=0.01)
             fee = st.number_input("🚚 Delivery Fee", min_value=0.0, format='%.2f', step=0.01)
             tip = st.number_input("💵 Tip", min_value=0.0, format='%.2f', step=0.01)
+            rider = st.selectbox("🚴 Rider", RIDERS)
     col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
     with col_btn2:
         submitted = st.form_submit_button("✅ Add Sale", use_container_width=True, type="primary")
+
 
 if submitted:
     if mode == 'All to Company (MoMo/Bank)':
@@ -114,6 +125,7 @@ if submitted:
         company_gets = 0.0
         rider_gets = 0.0
 
+
     data = {
         "date": date.strftime('%Y-%m-%d'),
         "location": location,
@@ -122,18 +134,21 @@ if submitted:
         "tip": tip,
         "payment_mode": mode,
         "company_gets": company_gets,
-        "rider_gets": rider_gets
+        "rider_gets": rider_gets,
+        "rider": rider
     }
     response = supabase.table("sales").insert(data).execute()
     if response.data:
         st.success("✅ Sale added successfully!")
     else:
         st.error("❌ Failed to add sale.")
-        st.write(response)  # Optional for debugging
+        st.write(response)
+
 
 # --- Fetch all sales ---
 response = supabase.table("sales").select("*").order("date", desc=True).execute()
 df = pd.DataFrame(response.data) if response.data else pd.DataFrame()
+
 
 if df.empty:
     st.info('📭 No data yet. Add your first sale above.')
@@ -142,6 +157,7 @@ else:
     df['date'] = pd.to_datetime(df['date'], errors='coerce')
     for col in ['cost_of_item', 'delivery_fee', 'tip', 'company_gets', 'rider_gets']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
+
 
     unique_dates = sorted(df['date'].dt.date.dropna().unique())
     if unique_dates:
@@ -153,8 +169,11 @@ else:
     else:
         start_date, end_date = None, None
 
+
     locations = st.sidebar.multiselect('Locations', sorted(df['location'].dropna().unique()), default=None)
     payment_modes = st.sidebar.multiselect('Payment Mode', PAYMENT_CHOICES, default=None)
+    riders_filter = st.sidebar.multiselect('Riders', RIDERS, default=None)
+
 
     if start_date and end_date:
         mask = (df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)
@@ -162,9 +181,12 @@ else:
             mask &= df['location'].isin(locations)
         if payment_modes:
             mask &= df['payment_mode'].isin(payment_modes)
+        if riders_filter:
+            mask &= df['rider'].isin(riders_filter)
         filtered = df[mask]
     else:
         filtered = pd.DataFrame()
+
 
     filtered_display = filtered.copy()
     if not filtered_display.empty:
@@ -184,6 +206,7 @@ else:
         )
         with st.expander("View Table", expanded=True):
             st.dataframe(filtered_display.reset_index(drop=True), use_container_width=True, height=300)
+
 
         st.markdown(
             """
@@ -220,7 +243,8 @@ else:
             unsafe_allow_html=True
         )
 
-        # ---- Corrected comma formatting for summary cards ----
+
+        # ---- Overall Summary Cards ----
         col_sum1, col_sum2, col_sum3, col_sum4, col_sum5 = st.columns(5)
         with col_sum1:
             st.markdown(
@@ -266,14 +290,90 @@ else:
             st.markdown(
                 f"""
                 <div class='metric-card'>
-                    <div class='metric-label'>🚴 Rider</div>
+                    <div class='metric-label'>🚴 Rider (Total)</div>
                     <div class='metric-value'>₵{filtered['rider_gets'].sum():,.2f}</div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
+
+
+        # ---- Per-Rider Breakdown ----
+        st.markdown(
+            """
+            <div style='background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); 
+                        padding: 0.3rem; border-radius: 10px; margin: 1rem 0;'>
+                <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
+                    🚴 Rider Earnings Breakdown
+                </h3>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        
+        # Calculate per-rider earnings
+        rider_summary = {}
+        for rider_name in RIDERS:
+            rider_data = filtered[filtered['rider'] == rider_name]
+            if not rider_data.empty:
+                rider_summary[rider_name] = {
+                    'deliveries': len(rider_data),
+                    'delivery_fees': rider_data['delivery_fee'].sum(),
+                    'tips': rider_data['tip'].sum(),
+                    'earnings': rider_data['rider_gets'].sum()
+                }
+            else:
+                rider_summary[rider_name] = {
+                    'deliveries': 0,
+                    'delivery_fees': 0.0,
+                    'tips': 0.0,
+                    'earnings': 0.0
+                }
+        
+        # Display per-rider cards
+        rider_cols = st.columns(len(RIDERS))
+        for idx, rider_name in enumerate(RIDERS):
+            with rider_cols[idx]:
+                data = rider_summary[rider_name]
+                gradient = "#667eea 0%, #764ba2 100%" if idx == 0 else "#f093fb 0%, #f5576c 100%"
+                st.markdown(
+                    f"""
+                    <div style='background: linear-gradient(135deg, {gradient}); 
+                                padding: 1.5rem; border-radius: 8px; color: white; text-align: center;
+                                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);'>
+                        <div style='font-weight: 600; font-size: 1.1rem; margin-bottom: 1rem;'>
+                            🚴 {rider_name}
+                        </div>
+                        <div style='font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.5rem;'>Deliveries: <strong>{data['deliveries']}</strong></div>
+                        <div style='font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.5rem;'>Delivery Fees: <strong>₵{data['delivery_fees']:,.2f}</strong></div>
+                        <div style='font-size: 0.9rem; opacity: 0.9; margin-bottom: 1rem;'>Tips: <strong>₵{data['tips']:,.2f}</strong></div>
+                        <div style='border-top: 1px solid rgba(255,255,255,0.3); padding-top: 1rem;'>
+                            <div style='font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.3rem;'>Total Earnings</div>
+                            <div style='font-size: 1.8rem; font-weight: 700;'>₵{data['earnings']:,.2f}</div>
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+        
+        # Per-rider detailed table
+        st.markdown("#### 📋 Detailed Per-Rider Summary")
+        rider_summary_df = pd.DataFrame([
+            {
+                'Rider': rider_name,
+                'Deliveries': data['deliveries'],
+                'Delivery Fees': f"₵{data['delivery_fees']:,.2f}",
+                'Tips': f"₵{data['tips']:,.2f}",
+                'Total Earnings': f"₵{data['earnings']:,.2f}"
+            }
+            for rider_name, data in rider_summary.items()
+        ])
+        st.dataframe(rider_summary_df, use_container_width=True, hide_index=True)
+
+
     else:
         st.warning("⚠️ No records for selected filter combination.")
+
 
     # --- Edit/delete section with modern styling ---
     st.markdown(
@@ -325,6 +425,14 @@ else:
                 else:
                     default_index = 0
                 new_mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES, index=default_index, key=f'edit_mode_{selected_id}')
+                
+                # Get current rider for editing
+                current_rider = edit_row['rider'].values[0]
+                if current_rider in RIDERS:
+                    rider_default_index = RIDERS.index(current_rider)
+                else:
+                    rider_default_index = 0
+                new_rider = st.selectbox("🚴 Rider", RIDERS, index=rider_default_index, key=f'edit_rider_{selected_id}')
                 st.markdown("</div>", unsafe_allow_html=True)
             # Calculate based on payment mode
             if new_mode == 'All to Company (MoMo/Bank)':
@@ -350,7 +458,8 @@ else:
                         "tip": new_tip,
                         "payment_mode": new_mode,
                         "company_gets": company_gets,
-                        "rider_gets": rider_gets
+                        "rider_gets": rider_gets,
+                        "rider": new_rider
                     }
                     response = supabase.table("sales").update(update_data).eq("id", int(selected_id)).execute()
                     if response.data:
