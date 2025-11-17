@@ -158,10 +158,6 @@ else:
     for col in ['cost_of_item', 'delivery_fee', 'tip', 'company_gets', 'rider_gets']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    # CRITICAL FIX: Add rider column if it doesn't exist (backward compatibility)
-    if 'rider' not in df.columns:
-        df['rider'] = 'Prince'  # Default for existing records
-        st.warning("⚠️ Adding rider column with default value. Please ensure your Supabase table has the 'rider' column added.")
 
     unique_dates = sorted(df['date'].dt.date.dropna().unique())
     if unique_dates:
@@ -223,6 +219,29 @@ else:
             """,
             unsafe_allow_html=True
         )
+        st.markdown(
+            """
+            <style>
+            .metric-container { display: flex; gap: 10px; margin-bottom: 10px; }
+            .metric-card {
+                flex: 1;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                padding: 1.5rem;
+                border-radius: 8px;
+                color: white;
+                text-align: center;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+            .metric-card:nth-child(2) { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+            .metric-card:nth-child(3) { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+            .metric-card:nth-child(4) { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+            .metric-card:nth-child(5) { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+            .metric-label { font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem; font-weight: 600; }
+            .metric-value { font-size: 1.8rem; font-weight: 700; }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
 
 
         # ---- Overall Summary Cards ----
@@ -230,9 +249,9 @@ else:
         with col_sum1:
             st.markdown(
                 f"""
-                <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1.5rem; border-radius: 8px; color: white; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);'>
-                    <div style='font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem; font-weight: 600;'>🚚 Delivery Fees</div>
-                    <div style='font-size: 1.8rem; font-weight: 700;'>₵{filtered['delivery_fee'].sum():,.2f}</div>
+                <div class='metric-card'>
+                    <div class='metric-label'>🚚 Delivery Fees</div>
+                    <div class='metric-value'>₵{filtered['delivery_fee'].sum():,.2f}</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -240,9 +259,9 @@ else:
         with col_sum2:
             st.markdown(
                 f"""
-                <div style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 1.5rem; border-radius: 8px; color: white; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);'>
-                    <div style='font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem; font-weight: 600;'>💰 Item Cost</div>
-                    <div style='font-size: 1.8rem; font-weight: 700;'>₵{filtered['cost_of_item'].sum():,.2f}</div>
+                <div class='metric-card'>
+                    <div class='metric-label'>💰 Item Cost</div>
+                    <div class='metric-value'>₵{filtered['cost_of_item'].sum():,.2f}</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -250,9 +269,9 @@ else:
         with col_sum3:
             st.markdown(
                 f"""
-                <div style='background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 1.5rem; border-radius: 8px; color: white; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);'>
-                    <div style='font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem; font-weight: 600;'>💵 Tips</div>
-                    <div style='font-size: 1.8rem; font-weight: 700;'>₵{filtered['tip'].sum():,.2f}</div>
+                <div class='metric-card'>
+                    <div class='metric-label'>💵 Tips</div>
+                    <div class='metric-value'>₵{filtered['tip'].sum():,.2f}</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -260,9 +279,9 @@ else:
         with col_sum4:
             st.markdown(
                 f"""
-                <div style='background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); padding: 1.5rem; border-radius: 8px; color: white; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);'>
-                    <div style='font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem; font-weight: 600;'>🏢 Company</div>
-                    <div style='font-size: 1.8rem; font-weight: 700;'>₵{filtered['company_gets'].sum():,.2f}</div>
+                <div class='metric-card'>
+                    <div class='metric-label'>🏢 Company</div>
+                    <div class='metric-value'>₵{filtered['company_gets'].sum():,.2f}</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -270,16 +289,16 @@ else:
         with col_sum5:
             st.markdown(
                 f"""
-                <div style='background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); padding: 1.5rem; border-radius: 8px; color: white; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);'>
-                    <div style='font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem; font-weight: 600;'>🚴 Rider (Total)</div>
-                    <div style='font-size: 1.8rem; font-weight: 700;'>₵{filtered['rider_gets'].sum():,.2f}</div>
+                <div class='metric-card'>
+                    <div class='metric-label'>🚴 Rider (Total)</div>
+                    <div class='metric-value'>₵{filtered['rider_gets'].sum():,.2f}</div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
 
 
-        # ---- Per-Rider Breakdown (COMPACT VERSION WITH INLINE STYLES) ----
+        # ---- Per-Rider Breakdown ----
         st.markdown(
             """
             <div style='background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); 
@@ -292,10 +311,10 @@ else:
             unsafe_allow_html=True
         )
         
-        # Calculate per-rider earnings - WITH SAFETY CHECK
+        # Calculate per-rider earnings
         rider_summary = {}
         for rider_name in RIDERS:
-            rider_data = filtered[filtered['rider'] == rider_name] if 'rider' in filtered.columns else pd.DataFrame()
+            rider_data = filtered[filtered['rider'] == rider_name]
             if not rider_data.empty:
                 rider_summary[rider_name] = {
                     'deliveries': len(rider_data),
@@ -311,31 +330,26 @@ else:
                     'earnings': 0.0
                 }
         
-        # Display per-rider cards - COMPACT with all styles inline
+        # Display per-rider cards
         rider_cols = st.columns(len(RIDERS))
         for idx, rider_name in enumerate(RIDERS):
             with rider_cols[idx]:
                 data = rider_summary[rider_name]
-                gradient = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" if idx == 0 else "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
-                
+                gradient = "#667eea 0%, #764ba2 100%" if idx == 0 else "#f093fb 0%, #f5576c 100%"
                 st.markdown(
                     f"""
-                    <div style="background: {gradient}; padding: 1rem; border-radius: 8px; color: white; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-                        <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.5rem;">
+                    <div style='background: linear-gradient(135deg, {gradient}); 
+                                padding: 1rem; border-radius: 8px; color: white; text-align: center;
+                                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);'>
+                        <div style='font-weight: 600; font-size: 1.1rem; margin-bottom: 1rem;'>
                             🚴 {rider_name}
                         </div>
-                        <div style="font-size: 0.8rem; opacity: 0.9; margin-bottom: 0.25rem; font-weight: 600;">Deliveries</div>
-                        <div style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.3rem;">{data['deliveries']}</div>
-                        
-                        <div style="font-size: 0.8rem; opacity: 0.9; margin-bottom: 0.25rem; font-weight: 600;">Delivery Fees</div>
-                        <div style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.3rem;">₵{data['delivery_fees']:,.2f}</div>
-                        
-                        <div style="font-size: 0.8rem; opacity: 0.9; margin-bottom: 0.25rem; font-weight: 600;">Tips</div>
-                        <div style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.75rem;">₵{data['tips']:,.2f}</div>
-                        
-                        <div style="border-top: 1px solid rgba(255,255,255,0.3); padding-top: 0.75rem; margin-top: 0.75rem;">
-                            <div style="font-size: 0.8rem; opacity: 0.9; margin-bottom: 0.3rem; font-weight: 600;">Total Earnings</div>
-                            <div style="font-size: 1.5rem; font-weight: 700;">₵{data['earnings']:,.2f}</div>
+                        <div style='font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.5rem;'>Deliveries: <strong>{data['deliveries']}</strong></div>
+                        <div style='font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.5rem;'>Delivery Fees: <strong>₵{data['delivery_fees']:,.2f}</strong></div>
+                        <div style='font-size: 0.9rem; opacity: 0.9; margin-bottom: 1rem;'>Tips: <strong>₵{data['tips']:,.2f}</strong></div>
+                        <div style='border-top: 1px solid rgba(255,255,255,0.3); padding-top: 1rem;'>
+                            <div style='font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.3rem;'>Total Earnings</div>
+                            <div style='font-size: 1.8rem; font-weight: 700;'>₵{data['earnings']:,.2f}</div>
                         </div>
                     </div>
                     """,
@@ -412,12 +426,8 @@ else:
                     default_index = 0
                 new_mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES, index=default_index, key=f'edit_mode_{selected_id}')
                 
-                # Get current rider for editing - WITH SAFETY CHECK
-                if 'rider' in edit_row.columns:
-                    current_rider = edit_row['rider'].values[0]
-                else:
-                    current_rider = 'Prince'
-                
+                # Get current rider for editing
+                current_rider = edit_row['rider'].values[0]
                 if current_rider in RIDERS:
                     rider_default_index = RIDERS.index(current_rider)
                 else:
