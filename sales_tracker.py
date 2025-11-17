@@ -99,7 +99,7 @@ with st.form("sale_form", clear_on_submit=True):
         with st.container(border=True):
             date = st.date_input("📅 Date", datetime.now())
             location = st.text_input("📍 Location", placeholder="Enter location")
-            mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES)
+            mode = st.radio("💳 Payment Mode", PAYMENT_CHOICES)
     with col2:
         with st.container(border=True):
             cost = st.number_input("💰 Cost of Item", min_value=0.0, format='%.2f', step=0.01)
@@ -424,7 +424,7 @@ else:
                     default_index = PAYMENT_CHOICES.index(selected_mode)
                 else:
                     default_index = 0
-                new_mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES, index=default_index, key=f'edit_mode_{selected_id}')
+                new_mode = st.radio("💳 Payment Mode", PAYMENT_CHOICES, index=default_index, key=f'edit_mode_{selected_id}')
                 
                 # Get current rider for editing
                 current_rider = edit_row['rider'].values[0]
@@ -432,7 +432,7 @@ else:
                     rider_default_index = RIDERS.index(current_rider)
                 else:
                     rider_default_index = 0
-                new_rider = st.selectbox("🚴 Rider", RIDERS, index=rider_default_index, key=f'edit_rider_{selected_id}')
+                new_rider = st.radio("🚴 Rider", RIDERS, index=rider_default_index, key=f'edit_rider_{selected_id}')
                 st.markdown("</div>", unsafe_allow_html=True)
             # Calculate based on payment mode
             if new_mode == 'All to Company (MoMo/Bank)':
