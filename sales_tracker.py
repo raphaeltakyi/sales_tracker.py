@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime
 from supabase import create_client, Client
 
+
 # --- Configure page layout ---
 st.set_page_config(
     page_title="Daily Sales Tracker - Mannequins Ghana",
@@ -10,6 +11,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
 
 # --- Custom CSS to maximize vertical footprint ---
 st.markdown(
@@ -47,10 +49,12 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+
 # Initialize Supabase client
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
+
 
 # --- Title and subtitle
 st.markdown(
@@ -65,11 +69,51 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
 PAYMENT_CHOICES = [
-    'All to Company (MoMo/Bank)',
-    'All to Rider (Cash)',
-    'Split: Item to Company, Delivery+Tip to Rider'
+    '1. All to Company (MoMo/Bank)',
+    '2. All to Rider - Prince (Cash)',
+    '3. All to Rider - Justice (Cash)',
+    '4. Split: Item to Company, Delivery+Tip to Rider - Prince',
+    '5. Split: Item to Company, Delivery+Tip to Rider - Justice'
 ]
+
+RIDERS = ['Prince', 'Justice']
+
+
+def get_rider_from_payment_mode(mode):
+    """Extract rider name from payment mode."""
+    if 'Prince' in mode:
+        return 'Prince'
+    elif 'Justice' in mode:
+        return 'Justice'
+    else:
+        return 'Company'
+
+
+def calculate_payment_split(mode, cost, fee, tip):
+    """
+    Calculate how much company and rider gets based on payment mode.
+    
+    1. All to Company: Company gets (cost + fee + tip), Rider gets 0
+    2. All to Rider - Prince: Company gets 0, Rider Prince gets (cost + fee + tip)
+    3. All to Rider - Justice: Company gets 0, Rider Justice gets (cost + fee + tip)
+    4. Split (Prince): Company gets cost, Rider Prince gets (fee + tip)
+    5. Split (Justice): Company gets cost, Rider Justice gets (fee + tip)
+    """
+    if mode == '1. All to Company (MoMo/Bank)':
+        return cost + fee + tip, 0.0
+    elif mode == '2. All to Rider - Prince (Cash)':
+        return 0.0, cost + fee + tip
+    elif mode == '3. All to Rider - Justice (Cash)':
+        return 0.0, cost + fee + tip
+    elif mode == '4. Split: Item to Company, Delivery+Tip to Rider - Prince':
+        return cost, fee + tip
+    elif mode == '5. Split: Item to Company, Delivery+Tip to Rider - Justice':
+        return cost, fee + tip
+    else:
+        return 0.0, 0.0
+
 
 # --- Add a sale form with modern styling ---
 st.markdown(
@@ -83,6 +127,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 with st.form("sale_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
@@ -100,19 +145,10 @@ with st.form("sale_form", clear_on_submit=True):
     with col_btn2:
         submitted = st.form_submit_button("✅ Add Sale", use_container_width=True, type="primary")
 
+
 if submitted:
-    if mode == 'All to Company (MoMo/Bank)':
-        company_gets = 0.0
-        rider_gets = fee + tip
-    elif mode == 'All to Rider (Cash)':
-        company_gets = cost
-        rider_gets = 0.0
-    elif mode == 'Split: Item to Company, Delivery+Tip to Rider':
-        company_gets = 0.0
-        rider_gets = 0.0
-    else:
-        company_gets = 0.0
-        rider_gets = 0.0
+    company_gets, rider_gets = calculate_payment_split(mode, cost, fee, tip)
+    rider = get_rider_from_payment_mode(mode)
 
     data = {
         "date": date.strftime('%Y-%m-%d'),
@@ -121,6 +157,7 @@ if submitted:
         "delivery_fee": fee,
         "tip": tip,
         "payment_mode": mode,
+        "rider": rider,
         "company_gets": company_gets,
         "rider_gets": rider_gets
     }
@@ -131,9 +168,11 @@ if submitted:
         st.error("❌ Failed to add sale.")
         st.write(response)  # Optional for debugging
 
+
 # --- Fetch all sales ---
 response = supabase.table("sales").select("*").order("date", desc=True).execute()
 df = pd.DataFrame(response.data) if response.data else pd.DataFrame()
+
 
 if df.empty:
     st.info('📭 No data yet. Add your first sale above.')
@@ -142,6 +181,7 @@ else:
     df['date'] = pd.to_datetime(df['date'], errors='coerce')
     for col in ['cost_of_item', 'delivery_fee', 'tip', 'company_gets', 'rider_gets']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
+
 
     unique_dates = sorted(df['date'].dt.date.dropna().unique())
     if unique_dates:
@@ -153,8 +193,11 @@ else:
     else:
         start_date, end_date = None, None
 
+
     locations = st.sidebar.multiselect('Locations', sorted(df['location'].dropna().unique()), default=None)
     payment_modes = st.sidebar.multiselect('Payment Mode', PAYMENT_CHOICES, default=None)
+    riders = st.sidebar.multiselect('Riders', RIDERS, default=None)
+
 
     if start_date and end_date:
         mask = (df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)
@@ -162,9 +205,12 @@ else:
             mask &= df['location'].isin(locations)
         if payment_modes:
             mask &= df['payment_mode'].isin(payment_modes)
+        if riders:
+            mask &= df['rider'].isin(riders)
         filtered = df[mask]
     else:
         filtered = pd.DataFrame()
+
 
     filtered_display = filtered.copy()
     if not filtered_display.empty:
@@ -185,12 +231,13 @@ else:
         with st.expander("View Table", expanded=True):
             st.dataframe(filtered_display.reset_index(drop=True), use_container_width=True, height=300)
 
+
         st.markdown(
             """
             <div style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
                         padding: 0.3rem; border-radius: 10px; margin: 1rem 0;'>
                 <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
-                    💹 Summary Statistics
+                    💹 Overall Summary Statistics
                 </h3>
             </div>
             """,
@@ -220,7 +267,8 @@ else:
             unsafe_allow_html=True
         )
 
-        # ---- Corrected comma formatting for summary cards ----
+
+        # ---- Overall Summary Cards ----
         col_sum1, col_sum2, col_sum3, col_sum4, col_sum5 = st.columns(5)
         with col_sum1:
             st.markdown(
@@ -266,14 +314,50 @@ else:
             st.markdown(
                 f"""
                 <div class='metric-card'>
-                    <div class='metric-label'>🚴 Rider</div>
+                    <div class='metric-label'>🚴 Total Riders</div>
                     <div class='metric-value'>₵{filtered['rider_gets'].sum():,.2f}</div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
+
+
+        # ---- Per-Rider Summary Statistics ----
+        st.markdown(
+            """
+            <div style='background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); 
+                        padding: 0.3rem; border-radius: 10px; margin: 1.5rem 0 1rem 0;'>
+                <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
+                    🚴 Rider-Specific Summary
+                </h3>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        for rider in RIDERS:
+            rider_data = filtered[filtered['rider'] == rider]
+            
+            if not rider_data.empty:
+                st.markdown(f"#### {rider}'s Performance")
+                
+                rider_col1, rider_col2, rider_col3, rider_col4 = st.columns(4)
+                with rider_col1:
+                    st.metric(label="🚚 Deliveries", value=f"{len(rider_data)}")
+                with rider_col2:
+                    st.metric(label="💰 Total Earned", value=f"₵{rider_data['rider_gets'].sum():,.2f}")
+                with rider_col3:
+                    st.metric(label="📊 Avg per Delivery", value=f"₵{rider_data['rider_gets'].mean():,.2f}")
+                with rider_col4:
+                    st.metric(label="💵 Tips Received", value=f"₵{rider_data['tip'].sum():,.2f}")
+                
+                st.markdown("---")
+            else:
+                st.info(f"ℹ️ No records for {rider}")
+
     else:
         st.warning("⚠️ No records for selected filter combination.")
+
 
     # --- Edit/delete section with modern styling ---
     st.markdown(
@@ -327,18 +411,8 @@ else:
                 new_mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES, index=default_index, key=f'edit_mode_{selected_id}')
                 st.markdown("</div>", unsafe_allow_html=True)
             # Calculate based on payment mode
-            if new_mode == 'All to Company (MoMo/Bank)':
-                company_gets = 0.0
-                rider_gets = new_fee + new_tip
-            elif new_mode == 'All to Rider (Cash)':
-                company_gets = new_cost
-                rider_gets = 0.0
-            elif new_mode == 'Split: Item to Company, Delivery+Tip to Rider':
-                company_gets = 0.0
-                rider_gets = 0.0
-            else:
-                company_gets = 0.0
-                rider_gets = 0.0
+            company_gets, rider_gets = calculate_payment_split(new_mode, new_cost, new_fee, new_tip)
+            new_rider = get_rider_from_payment_mode(new_mode)
             st.markdown("---")
             btn_col1, btn_col2, btn_col3 = st.columns([1, 1, 2])
             with btn_col1:
@@ -349,6 +423,7 @@ else:
                         "delivery_fee": new_fee,
                         "tip": new_tip,
                         "payment_mode": new_mode,
+                        "rider": new_rider,
                         "company_gets": company_gets,
                         "rider_gets": rider_gets
                     }
