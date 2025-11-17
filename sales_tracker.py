@@ -250,7 +250,7 @@ else:
             st.markdown(
                 f"""
                 <div class='metric-card'>
-                    <div class='metric-label'>🚚 Delivery Fees</div>
+                    <div class='metric-label'>🚚 Total Delivery Fees</div>
                     <div class='metric-value'>₵{filtered['delivery_fee'].sum():,.2f}</div>
                 </div>
                 """,
@@ -260,7 +260,7 @@ else:
             st.markdown(
                 f"""
                 <div class='metric-card'>
-                    <div class='metric-label'>💰 Item Cost</div>
+                    <div class='metric-label'>💰 Total Sales</div>
                     <div class='metric-value'>₵{filtered['cost_of_item'].sum():,.2f}</div>
                 </div>
                 """,
@@ -270,7 +270,7 @@ else:
             st.markdown(
                 f"""
                 <div class='metric-card'>
-                    <div class='metric-label'>💵 Tips</div>
+                    <div class='metric-label'>💵 Total Tips</div>
                     <div class='metric-value'>₵{filtered['tip'].sum():,.2f}</div>
                 </div>
                 """,
@@ -280,7 +280,7 @@ else:
             st.markdown(
                 f"""
                 <div class='metric-card'>
-                    <div class='metric-label'>🏢 Company</div>
+                    <div class='metric-label'>🏢 Rider Owes Company</div>
                     <div class='metric-value'>₵{filtered['company_gets'].sum():,.2f}</div>
                 </div>
                 """,
@@ -290,7 +290,7 @@ else:
             st.markdown(
                 f"""
                 <div class='metric-card'>
-                    <div class='metric-label'>🚴 Rider (Total)</div>
+                    <div class='metric-label'>🚴 Company Owes Rider (Total)</div>
                     <div class='metric-value'>₵{filtered['rider_gets'].sum():,.2f}</div>
                 </div>
                 """,
