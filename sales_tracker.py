@@ -44,35 +44,6 @@ st.markdown(
         color: #4B6EAF !important;
         font-size: 0.95rem !important;
     }
-    /* Reduced rider card styling for compact footprint */
-    .rider-card-compact {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1rem;
-        border-radius: 8px;
-        color: white;
-        text-align: center;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        font-size: 0.9rem;
-    }
-    .rider-card-compact.justice {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    }
-    .rider-label-compact {
-        font-size: 0.8rem;
-        opacity: 0.9;
-        margin-bottom: 0.25rem;
-        font-weight: 600;
-    }
-    .rider-value-compact {
-        font-size: 0.95rem;
-        font-weight: 700;
-        margin-bottom: 0.3rem;
-    }
-    .rider-earnings-compact {
-        border-top: 1px solid rgba(255,255,255,0.3);
-        padding-top: 0.75rem;
-        margin-top: 0.75rem;
-    }
     </style>
     """,
     unsafe_allow_html=True
@@ -252,29 +223,6 @@ else:
             """,
             unsafe_allow_html=True
         )
-        st.markdown(
-            """
-            <style>
-            .metric-container { display: flex; gap: 10px; margin-bottom: 10px; }
-            .metric-card {
-                flex: 1;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                padding: 1.5rem;
-                border-radius: 8px;
-                color: white;
-                text-align: center;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            }
-            .metric-card:nth-child(2) { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-            .metric-card:nth-child(3) { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-            .metric-card:nth-child(4) { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-            .metric-card:nth-child(5) { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-            .metric-label { font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem; font-weight: 600; }
-            .metric-value { font-size: 1.8rem; font-weight: 700; }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
 
 
         # ---- Overall Summary Cards ----
@@ -282,9 +230,9 @@ else:
         with col_sum1:
             st.markdown(
                 f"""
-                <div class='metric-card'>
-                    <div class='metric-label'>🚚 Delivery Fees</div>
-                    <div class='metric-value'>₵{filtered['delivery_fee'].sum():,.2f}</div>
+                <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1.5rem; border-radius: 8px; color: white; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);'>
+                    <div style='font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem; font-weight: 600;'>🚚 Delivery Fees</div>
+                    <div style='font-size: 1.8rem; font-weight: 700;'>₵{filtered['delivery_fee'].sum():,.2f}</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -292,9 +240,9 @@ else:
         with col_sum2:
             st.markdown(
                 f"""
-                <div class='metric-card'>
-                    <div class='metric-label'>💰 Item Cost</div>
-                    <div class='metric-value'>₵{filtered['cost_of_item'].sum():,.2f}</div>
+                <div style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 1.5rem; border-radius: 8px; color: white; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);'>
+                    <div style='font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem; font-weight: 600;'>💰 Item Cost</div>
+                    <div style='font-size: 1.8rem; font-weight: 700;'>₵{filtered['cost_of_item'].sum():,.2f}</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -302,9 +250,9 @@ else:
         with col_sum3:
             st.markdown(
                 f"""
-                <div class='metric-card'>
-                    <div class='metric-label'>💵 Tips</div>
-                    <div class='metric-value'>₵{filtered['tip'].sum():,.2f}</div>
+                <div style='background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 1.5rem; border-radius: 8px; color: white; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);'>
+                    <div style='font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem; font-weight: 600;'>💵 Tips</div>
+                    <div style='font-size: 1.8rem; font-weight: 700;'>₵{filtered['tip'].sum():,.2f}</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -312,9 +260,9 @@ else:
         with col_sum4:
             st.markdown(
                 f"""
-                <div class='metric-card'>
-                    <div class='metric-label'>🏢 Company</div>
-                    <div class='metric-value'>₵{filtered['company_gets'].sum():,.2f}</div>
+                <div style='background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); padding: 1.5rem; border-radius: 8px; color: white; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);'>
+                    <div style='font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem; font-weight: 600;'>🏢 Company</div>
+                    <div style='font-size: 1.8rem; font-weight: 700;'>₵{filtered['company_gets'].sum():,.2f}</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -322,16 +270,16 @@ else:
         with col_sum5:
             st.markdown(
                 f"""
-                <div class='metric-card'>
-                    <div class='metric-label'>🚴 Rider (Total)</div>
-                    <div class='metric-value'>₵{filtered['rider_gets'].sum():,.2f}</div>
+                <div style='background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); padding: 1.5rem; border-radius: 8px; color: white; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);'>
+                    <div style='font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem; font-weight: 600;'>🚴 Rider (Total)</div>
+                    <div style='font-size: 1.8rem; font-weight: 700;'>₵{filtered['rider_gets'].sum():,.2f}</div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
 
 
-        # ---- Per-Rider Breakdown (COMPACT VERSION) ----
+        # ---- Per-Rider Breakdown (COMPACT VERSION WITH INLINE STYLES) ----
         st.markdown(
             """
             <div style='background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); 
@@ -363,37 +311,38 @@ else:
                     'earnings': 0.0
                 }
         
-        # Display per-rider cards - COMPACT
+        # Display per-rider cards - COMPACT with all styles inline
         rider_cols = st.columns(len(RIDERS))
         for idx, rider_name in enumerate(RIDERS):
             with rider_cols[idx]:
                 data = rider_summary[rider_name]
-                card_class = "rider-card-compact" if idx == 0 else "rider-card-compact justice"
+                gradient = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" if idx == 0 else "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+                
                 st.markdown(
                     f"""
-                    <div class='{card_class}'>
-                        <div style='font-weight: 600; font-size: 1rem; margin-bottom: 0.5rem;'>
+                    <div style="background: {gradient}; padding: 1rem; border-radius: 8px; color: white; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                        <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.5rem;">
                             🚴 {rider_name}
                         </div>
-                        <div class='rider-label-compact'>Deliveries</div>
-                        <div class='rider-value-compact'>{data['deliveries']}</div>
+                        <div style="font-size: 0.8rem; opacity: 0.9; margin-bottom: 0.25rem; font-weight: 600;">Deliveries</div>
+                        <div style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.3rem;">{data['deliveries']}</div>
                         
-                        <div class='rider-label-compact'>Delivery Fees</div>
-                        <div class='rider-value-compact'>₵{data['delivery_fees']:,.2f}</div>
+                        <div style="font-size: 0.8rem; opacity: 0.9; margin-bottom: 0.25rem; font-weight: 600;">Delivery Fees</div>
+                        <div style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.3rem;">₵{data['delivery_fees']:,.2f}</div>
                         
-                        <div class='rider-label-compact'>Tips</div>
-                        <div class='rider-value-compact'>₵{data['tips']:,.2f}</div>
+                        <div style="font-size: 0.8rem; opacity: 0.9; margin-bottom: 0.25rem; font-weight: 600;">Tips</div>
+                        <div style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.75rem;">₵{data['tips']:,.2f}</div>
                         
-                        <div class='rider-earnings-compact'>
-                            <div class='rider-label-compact'>Total Earnings</div>
-                            <div style='font-size: 1.5rem; font-weight: 700;'>₵{data['earnings']:,.2f}</div>
+                        <div style="border-top: 1px solid rgba(255,255,255,0.3); padding-top: 0.75rem; margin-top: 0.75rem;">
+                            <div style="font-size: 0.8rem; opacity: 0.9; margin-bottom: 0.3rem; font-weight: 600;">Total Earnings</div>
+                            <div style="font-size: 1.5rem; font-weight: 700;">₵{data['earnings']:,.2f}</div>
                         </div>
                     </div>
                     """,
                     unsafe_allow_html=True
                 )
         
-        # Per-rider detailed table - NOW COLLAPSIBLE
+        # Per-rider detailed table - COLLAPSIBLE
         with st.expander("📋 Detailed Per-Rider Summary", expanded=False):
             rider_summary_df = pd.DataFrame([
                 {
