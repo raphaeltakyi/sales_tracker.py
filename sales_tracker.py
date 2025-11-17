@@ -44,6 +44,35 @@ st.markdown(
         color: #4B6EAF !important;
         font-size: 0.95rem !important;
     }
+    /* Reduced rider card styling for compact footprint */
+    .rider-card-compact {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 1rem;
+        border-radius: 8px;
+        color: white;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        font-size: 0.9rem;
+    }
+    .rider-card-compact.justice {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    .rider-label-compact {
+        font-size: 0.8rem;
+        opacity: 0.9;
+        margin-bottom: 0.25rem;
+        font-weight: 600;
+    }
+    .rider-value-compact {
+        font-size: 0.95rem;
+        font-weight: 700;
+        margin-bottom: 0.3rem;
+    }
+    .rider-earnings-compact {
+        border-top: 1px solid rgba(255,255,255,0.3);
+        padding-top: 0.75rem;
+        margin-top: 0.75rem;
+    }
     </style>
     """,
     unsafe_allow_html=True
@@ -158,6 +187,10 @@ else:
     for col in ['cost_of_item', 'delivery_fee', 'tip', 'company_gets', 'rider_gets']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
+    # CRITICAL FIX: Add rider column if it doesn't exist (backward compatibility)
+    if 'rider' not in df.columns:
+        df['rider'] = 'Prince'  # Default for existing records
+        st.warning("⚠️ Adding rider column with default value. Please ensure your Supabase table has the 'rider' column added.")
 
     unique_dates = sorted(df['date'].dt.date.dropna().unique())
     if unique_dates:
@@ -298,7 +331,7 @@ else:
             )
 
 
-        # ---- Per-Rider Breakdown ----
+        # ---- Per-Rider Breakdown (COMPACT VERSION) ----
         st.markdown(
             """
             <div style='background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); 
@@ -311,10 +344,10 @@ else:
             unsafe_allow_html=True
         )
         
-        # Calculate per-rider earnings
+        # Calculate per-rider earnings - WITH SAFETY CHECK
         rider_summary = {}
         for rider_name in RIDERS:
-            rider_data = filtered[filtered['rider'] == rider_name]
+            rider_data = filtered[filtered['rider'] == rider_name] if 'rider' in filtered.columns else pd.DataFrame()
             if not rider_data.empty:
                 rider_summary[rider_name] = {
                     'deliveries': len(rider_data),
@@ -330,45 +363,49 @@ else:
                     'earnings': 0.0
                 }
         
-        # Display per-rider cards
+        # Display per-rider cards - COMPACT
         rider_cols = st.columns(len(RIDERS))
         for idx, rider_name in enumerate(RIDERS):
             with rider_cols[idx]:
                 data = rider_summary[rider_name]
-                gradient = "#667eea 0%, #764ba2 100%" if idx == 0 else "#f093fb 0%, #f5576c 100%"
+                card_class = "rider-card-compact" if idx == 0 else "rider-card-compact justice"
                 st.markdown(
                     f"""
-                    <div style='background: linear-gradient(135deg, {gradient}); 
-                                padding: 1.5rem; border-radius: 8px; color: white; text-align: center;
-                                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);'>
-                        <div style='font-weight: 600; font-size: 1.1rem; margin-bottom: 1rem;'>
+                    <div class='{card_class}'>
+                        <div style='font-weight: 600; font-size: 1rem; margin-bottom: 0.5rem;'>
                             🚴 {rider_name}
                         </div>
-                        <div style='font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.5rem;'>Deliveries: <strong>{data['deliveries']}</strong></div>
-                        <div style='font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.5rem;'>Delivery Fees: <strong>₵{data['delivery_fees']:,.2f}</strong></div>
-                        <div style='font-size: 0.9rem; opacity: 0.9; margin-bottom: 1rem;'>Tips: <strong>₵{data['tips']:,.2f}</strong></div>
-                        <div style='border-top: 1px solid rgba(255,255,255,0.3); padding-top: 1rem;'>
-                            <div style='font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.3rem;'>Total Earnings</div>
-                            <div style='font-size: 1.8rem; font-weight: 700;'>₵{data['earnings']:,.2f}</div>
+                        <div class='rider-label-compact'>Deliveries</div>
+                        <div class='rider-value-compact'>{data['deliveries']}</div>
+                        
+                        <div class='rider-label-compact'>Delivery Fees</div>
+                        <div class='rider-value-compact'>₵{data['delivery_fees']:,.2f}</div>
+                        
+                        <div class='rider-label-compact'>Tips</div>
+                        <div class='rider-value-compact'>₵{data['tips']:,.2f}</div>
+                        
+                        <div class='rider-earnings-compact'>
+                            <div class='rider-label-compact'>Total Earnings</div>
+                            <div style='font-size: 1.5rem; font-weight: 700;'>₵{data['earnings']:,.2f}</div>
                         </div>
                     </div>
                     """,
                     unsafe_allow_html=True
                 )
         
-        # Per-rider detailed table
-        st.markdown("#### 📋 Detailed Per-Rider Summary")
-        rider_summary_df = pd.DataFrame([
-            {
-                'Rider': rider_name,
-                'Deliveries': data['deliveries'],
-                'Delivery Fees': f"₵{data['delivery_fees']:,.2f}",
-                'Tips': f"₵{data['tips']:,.2f}",
-                'Total Earnings': f"₵{data['earnings']:,.2f}"
-            }
-            for rider_name, data in rider_summary.items()
-        ])
-        st.dataframe(rider_summary_df, use_container_width=True, hide_index=True)
+        # Per-rider detailed table - NOW COLLAPSIBLE
+        with st.expander("📋 Detailed Per-Rider Summary", expanded=False):
+            rider_summary_df = pd.DataFrame([
+                {
+                    'Rider': rider_name,
+                    'Deliveries': data['deliveries'],
+                    'Delivery Fees': f"₵{data['delivery_fees']:,.2f}",
+                    'Tips': f"₵{data['tips']:,.2f}",
+                    'Total Earnings': f"₵{data['earnings']:,.2f}"
+                }
+                for rider_name, data in rider_summary.items()
+            ])
+            st.dataframe(rider_summary_df, use_container_width=True, hide_index=True)
 
 
     else:
@@ -426,8 +463,12 @@ else:
                     default_index = 0
                 new_mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES, index=default_index, key=f'edit_mode_{selected_id}')
                 
-                # Get current rider for editing
-                current_rider = edit_row['rider'].values[0]
+                # Get current rider for editing - WITH SAFETY CHECK
+                if 'rider' in edit_row.columns:
+                    current_rider = edit_row['rider'].values[0]
+                else:
+                    current_rider = 'Prince'
+                
                 if current_rider in RIDERS:
                     rider_default_index = RIDERS.index(current_rider)
                 else:
