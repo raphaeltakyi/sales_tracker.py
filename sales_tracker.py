@@ -2,57 +2,127 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 from supabase import create_client, Client
+import io
 
-# --- Configure page layout ---
+# ------------------------
+# Config & constants
+# ------------------------
 st.set_page_config(
     page_title="Daily Sales Tracker - Mannequins Ghana",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
-# --- Custom CSS to maximize vertical footprint ---
-st.markdown(
-    """
-    <style>
-    .main { padding-top: 0rem; }
-    .block-container { padding-top: 1rem; padding-bottom: 0rem; padding-left: 1rem; padding-right: 1rem; max-width: 100%; }
-    h1, h2, h3 { margin-top: 0.5rem; margin-bottom: 0.5rem; }
-    [data-testid="stDataFrame"] { height: auto; }
-    .streamlit-expanderHeader { padding: 0.5rem 0rem; }
-    .stMarkdown { margin-bottom: 0.5rem; }
-    .stTextInput > div > div > input,
-    .stNumberInput > div > div > input,
-    .stSelectbox > div > div > div {
-        border-radius: 8px !important;
-        border: 2px solid #e0e0e0 !important;
-        padding: 0.75rem !important;
-        font-size: 1rem !important;
-    }
-    .stTextInput > div > div > input:focus,
-    .stNumberInput > div > div > input:focus {
-        border: 2px solid #667eea !important;
-        box-shadow: 0 0 10px rgba(102, 126, 234, 0.2) !important;
-    }
-    .stTextInput > label,
-    .stNumberInput > label,
-    .stSelectbox > label,
-    .stDateInput > label {
-        font-weight: 600 !important;
-        color: #4B6EAF !important;
-        font-size: 0.95rem !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+PAYMENT_CHOICES = [
+    "All to Company (MoMo/Bank)",
+    "All to Rider (Cash)",
+    "Split: Item to Company, Delivery+Tip to Rider",
+]
 
-# Initialize Supabase client
-url = st.secrets["SUPABASE_URL"]
-key = st.secrets["SUPABASE_KEY"]
-supabase: Client = create_client(url, key)
+NUMERIC_COLS = ["cost_of_item", "delivery_fee", "tip", "company_gets", "rider_gets"]
 
-# --- Title and subtitle
+# ------------------------
+# Helpers: UI / logic / DB
+# ------------------------
+def inject_css():
+    st.markdown(
+        """
+        <style>
+        .main { padding-top: 0rem; }
+        .block-container { padding: 1rem; max-width: 100%; }
+        h1,h2,h3 { margin-top: 0.5rem; margin-bottom: 0.5rem; }
+        [data-testid="stDataFrame"] { height: auto; }
+        .streamlit-expanderHeader { padding: 0.5rem 0rem; }
+        .stTextInput > div > div > input,
+        .stNumberInput > div > div > input,
+        .stSelectbox > div > div > div {
+            border-radius: 8px !important;
+            border: 2px solid #e0e0e0 !important;
+            padding: 0.6rem !important;
+            font-size: 1rem !important;
+        }
+        .stTextInput > div > div > input:focus, .stNumberInput > div > div > input:focus {
+            border: 2px solid #667eea !important;
+            box-shadow: 0 0 8px rgba(102,126,234,0.15) !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+def section_header(title: str, color1: str = "#667eea", color2: str = "#764ba2", margin: str = "1rem 0"):
+    st.markdown(
+        f"""
+        <div style='background: linear-gradient(135deg, {color1} 0%, {color2} 100%);
+                    padding: 0.5rem; border-radius: 10px; margin: {margin};'>
+            <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
+                {title}
+            </h3>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+def compute_shares(mode: str, cost: float, fee: float, tip: float):
+    """Return (company_gets, rider_gets)."""
+    cost = cost or 0.0
+    fee = fee or 0.0
+    tip = tip or 0.0
+    if mode == "All to Company (MoMo/Bank)":
+        return 0.0, fee + tip
+    if mode == "All to Rider (Cash)":
+        return cost, 0.0
+    # Split or fallback
+    return 0.0, 0.0
+
+# ---------- Supabase wrappers ----------
+def supabase_client():
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SUPABASE_KEY"]
+    return create_client(url, key)
+
+@st.cache_data(ttl=60)
+def fetch_sales_from_db():
+    sup = supabase_client()
+    resp = sup.table("sales").select("*").order("date", desc=True).execute()
+    return pd.DataFrame(resp.data) if resp.data else pd.DataFrame()
+
+def insert_sale_db(payload: dict):
+    sup = supabase_client()
+    return sup.table("sales").insert(payload).execute()
+
+def update_sale_db(sale_id: int, payload: dict):
+    sup = supabase_client()
+    return sup.table("sales").update(payload).eq("id", sale_id).execute()
+
+def delete_sale_db(sale_id: int):
+    sup = supabase_client()
+    return sup.table("sales").delete().eq("id", sale_id).execute()
+
+# ---------- Data formatting helpers ----------
+def ensure_numeric(df: pd.DataFrame, cols=NUMERIC_COLS):
+    for c in cols:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+    return df
+
+def format_display_df(df: pd.DataFrame) -> pd.DataFrame:
+    disp = df.copy()
+    if "date" in disp.columns:
+        disp["date"] = pd.to_datetime(disp["date"], errors="coerce")
+        disp["date"] = disp["date"].dt.strftime("%a, %d/%m/%Y")
+    disp = disp.rename(columns=lambda x: " ".join(word.capitalize() for word in x.split("_")))
+    return disp
+
+# ------------------------
+# Inject CSS once
+# ------------------------
+inject_css()
+
+# ------------------------
+# Title
+# ------------------------
 st.markdown(
     """
     <h1 style='text-align:center; color:#4B6EAF; font-weight:700; font-family: Arial, sans-serif; margin-top: 0;'>
@@ -61,312 +131,218 @@ st.markdown(
     <p style='text-align:center; font-size:1rem; color:#6c757d; font-family: Arial, sans-serif; margin-bottom: 1.5rem;'>
         Built with Love from Kofi ❤️
     </p>
-    """, 
+    """,
     unsafe_allow_html=True,
 )
 
-PAYMENT_CHOICES = [
-    'All to Company (MoMo/Bank)',
-    'All to Rider (Cash)',
-    'Split: Item to Company, Delivery+Tip to Rider'
-]
-
-# --- Add a sale form with modern styling ---
-st.markdown(
-    """
-    <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                padding: 0.5rem; border-radius: 10px; margin-bottom: 1rem;'>
-        <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
-            ➕ Add New Sale
-        </h3>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+# ------------------------
+# Add Sale Form
+# ------------------------
+section_header("➕ Add New Sale", "#667eea", "#764ba2", "0.5rem 0 1rem 0")
 
 with st.form("sale_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     with col1:
-        with st.container(border=True):
-            date = st.date_input("📅 Date", datetime.now())
-            location = st.text_input("📍 Location", placeholder="Enter location")
-            mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES)
+        date = st.date_input("📅 Date", datetime.now())
+        location = st.text_input("📍 Location", placeholder="Enter location")
+        mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES)
     with col2:
-        with st.container(border=True):
-            cost = st.number_input("💰 Cost of Item", min_value=0.0, format='%.2f', step=0.01)
-            fee = st.number_input("🚚 Delivery Fee", min_value=0.0, format='%.2f', step=0.01)
-            tip = st.number_input("💵 Tip", min_value=0.0, format='%.2f', step=0.01)
-    col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
-    with col_btn2:
+        cost = st.number_input("💰 Cost of Item", min_value=0.0, format="%.2f", step=0.01)
+        fee = st.number_input("🚚 Delivery Fee", min_value=0.0, format="%.2f", step=0.01)
+        tip = st.number_input("💵 Tip", min_value=0.0, format="%.2f", step=0.01)
+
+    c1, c2, c3 = st.columns([1, 2, 1])
+    with c2:
         submitted = st.form_submit_button("✅ Add Sale", use_container_width=True, type="primary")
 
 if submitted:
-    if mode == 'All to Company (MoMo/Bank)':
-        company_gets = 0.0
-        rider_gets = fee + tip
-    elif mode == 'All to Rider (Cash)':
-        company_gets = cost
-        rider_gets = 0.0
-    elif mode == 'Split: Item to Company, Delivery+Tip to Rider':
-        company_gets = 0.0
-        rider_gets = 0.0
-    else:
-        company_gets = 0.0
-        rider_gets = 0.0
-
-    data = {
-        "date": date.strftime('%Y-%m-%d'),
+    company_gets, rider_gets = compute_shares(mode, cost, fee, tip)
+    payload = {
+        "date": date.strftime("%Y-%m-%d"),
         "location": location,
         "cost_of_item": cost,
         "delivery_fee": fee,
         "tip": tip,
         "payment_mode": mode,
         "company_gets": company_gets,
-        "rider_gets": rider_gets
+        "rider_gets": rider_gets,
     }
-    response = supabase.table("sales").insert(data).execute()
-    if response.data:
+    resp = insert_sale_db(payload)
+    if resp.data:
         st.success("✅ Sale added successfully!")
+        # clear cached sales so fetch returns fresh data
+        fetch_sales_from_db.clear()
     else:
         st.error("❌ Failed to add sale.")
-        st.write(response)  # Optional for debugging
+        st.write(resp)
 
-# --- Fetch all sales ---
-response = supabase.table("sales").select("*").order("date", desc=True).execute()
-df = pd.DataFrame(response.data) if response.data else pd.DataFrame()
+# ------------------------
+# Load sales
+# ------------------------
+df = fetch_sales_from_db()
 
 if df.empty:
-    st.info('📭 No data yet. Add your first sale above.')
-else:
-    st.sidebar.header('🔍 Filter')
-    df['date'] = pd.to_datetime(df['date'], errors='coerce')
-    for col in ['cost_of_item', 'delivery_fee', 'tip', 'company_gets', 'rider_gets']:
-        df[col] = pd.to_numeric(df[col], errors='coerce')
+    st.info("📭 No data yet. Add your first sale above.")
+    st.stop()
 
-    unique_dates = sorted(df['date'].dt.date.dropna().unique())
-    if unique_dates:
-        start_date, end_date = st.sidebar.select_slider(
-            'Select Date Range',
-            options=unique_dates,
-            value=(unique_dates[0], unique_dates[-1])
-        )
-    else:
-        start_date, end_date = None, None
+# Normalize types
+df["date"] = pd.to_datetime(df["date"], errors="coerce")
+df = ensure_numeric(df)
 
-    locations = st.sidebar.multiselect('Locations', sorted(df['location'].dropna().unique()), default=None)
-    payment_modes = st.sidebar.multiselect('Payment Mode', PAYMENT_CHOICES, default=None)
+# ------------------------
+# Filters (sidebar)
+# ------------------------
+st.sidebar.header("🔍 Filter")
+unique_dates = sorted(df["date"].dt.date.dropna().unique()) if "date" in df.columns else []
 
-    if start_date and end_date:
-        mask = (df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)
-        if locations:
-            mask &= df['location'].isin(locations)
-        if payment_modes:
-            mask &= df['payment_mode'].isin(payment_modes)
-        filtered = df[mask]
-    else:
-        filtered = pd.DataFrame()
-
-    filtered_display = filtered.copy()
-    if not filtered_display.empty:
-        filtered_display['date'] = filtered_display['date'].dt.strftime('%a, %d/%m/%Y')
-        filtered_display = filtered_display.rename(columns=lambda x: ' '.join(word.capitalize() for word in x.split('_')))
-        
-        st.markdown(
-            """
-            <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                        padding: 0.3rem; border-radius: 10px; margin: 1rem 0;'>
-                <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
-                    📊 Filtered Sales Records
-                </h3>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-        with st.expander("View Table", expanded=True):
-            st.dataframe(filtered_display.reset_index(drop=True), use_container_width=True, height=300)
-
-        st.markdown(
-            """
-            <div style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
-                        padding: 0.3rem; border-radius: 10px; margin: 1rem 0;'>
-                <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
-                    💹 Summary Statistics
-                </h3>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-        st.markdown(
-            """
-            <style>
-            .metric-container { display: flex; gap: 10px; margin-bottom: 10px; }
-            .metric-card {
-                flex: 1;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                padding: 1.5rem;
-                border-radius: 8px;
-                color: white;
-                text-align: center;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            }
-            .metric-card:nth-child(2) { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-            .metric-card:nth-child(3) { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-            .metric-card:nth-child(4) { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-            .metric-card:nth-child(5) { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-            .metric-label { font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem; font-weight: 600; }
-            .metric-value { font-size: 1.8rem; font-weight: 700; }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
-
-        # ---- Corrected comma formatting for summary cards ----
-        col_sum1, col_sum2, col_sum3, col_sum4, col_sum5 = st.columns(5)
-        with col_sum1:
-            st.markdown(
-                f"""
-                <div class='metric-card'>
-                    <div class='metric-label'>🚚 Delivery Fees</div>
-                    <div class='metric-value'>₵{filtered['delivery_fee'].sum():,.2f}</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-        with col_sum2:
-            st.markdown(
-                f"""
-                <div class='metric-card'>
-                    <div class='metric-label'>💰 Item Cost</div>
-                    <div class='metric-value'>₵{filtered['cost_of_item'].sum():,.2f}</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-        with col_sum3:
-            st.markdown(
-                f"""
-                <div class='metric-card'>
-                    <div class='metric-label'>💵 Tips</div>
-                    <div class='metric-value'>₵{filtered['tip'].sum():,.2f}</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-        with col_sum4:
-            st.markdown(
-                f"""
-                <div class='metric-card'>
-                    <div class='metric-label'>🏢 Company</div>
-                    <div class='metric-value'>₵{filtered['company_gets'].sum():,.2f}</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-        with col_sum5:
-            st.markdown(
-                f"""
-                <div class='metric-card'>
-                    <div class='metric-label'>🚴 Rider</div>
-                    <div class='metric-value'>₵{filtered['rider_gets'].sum():,.2f}</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-    else:
-        st.warning("⚠️ No records for selected filter combination.")
-
-    # --- Edit/delete section with modern styling ---
-    st.markdown(
-        """
-        <div style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
-                    padding: 0.3rem; border-radius: 10px; margin: 1rem 0;'>
-            <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
-                🔧 Manage Records
-            </h3>
-        </div>
-        """,
-        unsafe_allow_html=True
+if unique_dates:
+    start_date, end_date = st.sidebar.select_slider(
+        "Select Date Range",
+        options=unique_dates,
+        value=(unique_dates[0], unique_dates[-1]),
     )
-    with st.expander("📝 Edit or Delete a Sale Record", expanded=False):
-        st.markdown(
-            """
-            <style>
-            .stNumberInput > label, .stTextInput > label, .stSelectbox > label {
-                font-weight: 600;
-                color: #4B6EAF;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True
+else:
+    start_date, end_date = None, None
+
+locations = st.sidebar.multiselect("Locations", sorted(df["location"].dropna().unique())) if "location" in df.columns else []
+payment_modes = st.sidebar.multiselect("Payment Mode", PAYMENT_CHOICES)
+
+# Apply filters concisely
+filtered = df.copy()
+if start_date and end_date:
+    filtered = filtered[filtered["date"].dt.date.between(start_date, end_date)]
+if locations:
+    filtered = filtered[filtered["location"].isin(locations)]
+if payment_modes:
+    filtered = filtered[filtered["payment_mode"].isin(payment_modes)]
+
+# ------------------------
+# Display filtered results (with pagination & export)
+# ------------------------
+if filtered.empty:
+    st.warning("⚠️ No records for selected filter combination.")
+else:
+    display_df = format_display_df(filtered)
+    section_header("📊 Filtered Sales Records", "#667eea", "#764ba2", "0.5rem 0 0.75rem 0")
+
+    # Pagination controls
+    rows_per_page = st.sidebar.number_input("Rows per page", min_value=5, max_value=200, value=10)
+    total_rows = len(display_df)
+    total_pages = max(1, (total_rows - 1) // rows_per_page + 1)
+    page = st.sidebar.slider("Page", 1, total_pages, 1)
+    start_idx = (page - 1) * rows_per_page
+    end_idx = start_idx + rows_per_page
+    page_df = display_df.iloc[start_idx:end_idx].reset_index(drop=True)
+
+    # Beautiful table (read-only)
+    st.data_editor(page_df, hide_index=True, use_container_width=True, disabled=True)
+    st.caption(f"Showing page {page} of {total_pages} — {total_rows} records total")
+
+    # Export buttons
+    export_df = display_df.copy()
+    csv_bytes = export_df.to_csv(index=False).encode("utf-8")
+    st.download_button("Download CSV", csv_bytes, file_name="sales_filtered.csv", mime="text/csv")
+
+    excel_buffer = io.BytesIO()
+    with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
+        export_df.to_excel(writer, index=False, sheet_name="Filtered Sales")
+    st.download_button(
+        "Download Excel",
+        excel_buffer.getvalue(),
+        file_name="sales_filtered.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+    # Summary stats
+    section_header("💹 Summary Statistics", "#f093fb", "#f5576c", "0.75rem 0 0.5rem 0")
+    sums = {
+        "Delivery Fees": filtered["delivery_fee"].sum(),
+        "Item Cost": filtered["cost_of_item"].sum(),
+        "Tips": filtered["tip"].sum(),
+        "Company": filtered["company_gets"].sum(),
+        "Rider": filtered["rider_gets"].sum(),
+    }
+    cols = st.columns(5)
+    for col, (label, val) in zip(cols, sums.items()):
+        col.markdown(
+            f"<div style='text-align:center'><div style='font-weight:600'>{label}</div>"
+            f"<div style='font-size:1.2rem; font-weight:700'>₵{val:,.2f}</div></div>",
+            unsafe_allow_html=True,
         )
-        selected_id = st.number_input("🔍 Enter Sale ID", min_value=1, step=1, key='select_id', help="Enter the ID of the record you want to edit or delete")
-        edit_row = filtered[filtered['id'] == selected_id]
-        if not edit_row.empty:
-            st.markdown("#### 📄 Selected Record")
-            edit_row_display = edit_row.copy()
-            edit_row_display['date'] = edit_row_display['date'].dt.strftime('%a, %d/%m/%Y')
-            edit_row_display = edit_row_display.rename(columns=lambda x: ' '.join(word.capitalize() for word in x.split('_')))
-            st.dataframe(edit_row_display, use_container_width=True)
-            st.markdown("---")
-            st.markdown("#### ✏️ Edit Record Details")
-            edit_col1, edit_col2 = st.columns(2)
-            with edit_col1:
-                st.markdown("<div style='background-color: #f8f9fa; padding: 1rem; border-radius: 8px;'>", unsafe_allow_html=True)
-                new_loc = st.text_input("📍 Location", value=str(edit_row['location'].values[0]), key=f'edit_loc_{selected_id}')
-                new_cost = st.number_input("💰 Cost of Item", min_value=0.0, value=float(edit_row['cost_of_item'].values[0]), format='%.2f', key=f'edit_cost_{selected_id}')
-                new_fee = st.number_input("🚚 Delivery Fee", min_value=0.0, value=float(edit_row['delivery_fee'].values[0]), format='%.2f', key=f'edit_fee_{selected_id}')
-                st.markdown("</div>", unsafe_allow_html=True)
-            with edit_col2:
-                st.markdown("<div style='background-color: #f8f9fa; padding: 1rem; border-radius: 8px;'>", unsafe_allow_html=True)
-                new_tip = st.number_input("💵 Tip", min_value=0.0, value=float(edit_row['tip'].values[0]), format='%.2f', key=f'edit_tip_{selected_id}')
-                selected_mode = edit_row['payment_mode'].values[0]
-                if selected_mode in PAYMENT_CHOICES:
-                    default_index = PAYMENT_CHOICES.index(selected_mode)
+
+    # Monthly summary
+    section_header("📈 Monthly Summary", "#4facfe", "#00f2fe", "0.75rem 0 0.5rem 0")
+    monthly = (
+        filtered.assign(month=filtered["date"].dt.to_period("M"))
+        .groupby("month")[["cost_of_item", "delivery_fee", "tip", "company_gets", "rider_gets"]]
+        .sum()
+        .reset_index()
+    )
+    if not monthly.empty:
+        monthly["month"] = monthly["month"].astype(str)
+        st.data_editor(monthly.rename(columns=lambda x: x.replace("_", " ").title()), hide_index=True, use_container_width=True, disabled=True)
+    else:
+        st.info("No monthly summary available for the selected filters.")
+
+# ------------------------
+# Edit / Delete section (uses filtered if available)
+# ------------------------
+section_header("🔧 Manage Records", "#667eea", "#764ba2", "0.75rem 0 0.5rem 0")
+with st.expander("📝 Edit or Delete a Sale Record", expanded=False):
+    selected_id = st.number_input("🔍 Enter Sale ID", min_value=1, step=1, help="Enter the ID of the record you want to edit or delete")
+    target_df = filtered if "filtered" in locals() and not filtered.empty else df
+    edit_row = target_df[target_df["id"] == selected_id]
+
+    if edit_row.empty:
+        st.info("ℹ️ Enter a valid Sale ID from the visible table to edit or delete.")
+    else:
+        st.markdown("#### 📄 Selected Record")
+        st.dataframe(format_display_df(edit_row), use_container_width=True)
+        st.markdown("---")
+        st.markdown("#### ✏️ Edit Record Details")
+
+        ecol1, ecol2 = st.columns(2)
+        with ecol1:
+            new_loc = st.text_input("📍 Location", value=str(edit_row["location"].values[0]), key=f"edit_loc_{selected_id}")
+            new_cost = st.number_input("💰 Cost of Item", min_value=0.0, value=float(edit_row["cost_of_item"].values[0]), format="%.2f", key=f"edit_cost_{selected_id}")
+            new_fee = st.number_input("🚚 Delivery Fee", min_value=0.0, value=float(edit_row["delivery_fee"].values[0]), format="%.2f", key=f"edit_fee_{selected_id}")
+        with ecol2:
+            new_tip = st.number_input("💵 Tip", min_value=0.0, value=float(edit_row["tip"].values[0]), format="%.2f", key=f"edit_tip_{selected_id}")
+            cur_mode = edit_row["payment_mode"].values[0]
+            default_idx = PAYMENT_CHOICES.index(cur_mode) if cur_mode in PAYMENT_CHOICES else 0
+            new_mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES, index=default_idx, key=f"edit_mode_{selected_id}")
+
+        # Reuse compute_shares
+        company_gets, rider_gets = compute_shares(new_mode, new_cost, new_fee, new_tip)
+
+        st.markdown("---")
+        b1, b2, b3 = st.columns([1, 1, 2])
+        with b1:
+            if st.button("✅ Update Record", type="primary", use_container_width=True):
+                payload = {
+                    "location": new_loc,
+                    "cost_of_item": new_cost,
+                    "delivery_fee": new_fee,
+                    "tip": new_tip,
+                    "payment_mode": new_mode,
+                    "company_gets": company_gets,
+                    "rider_gets": rider_gets,
+                }
+                resp = update_sale_db(int(selected_id), payload)
+                if resp.data:
+                    st.success("✅ Record updated successfully!")
+                    fetch_sales_from_db.clear()
+                    st.experimental_rerun()
                 else:
-                    default_index = 0
-                new_mode = st.selectbox("💳 Payment Mode", PAYMENT_CHOICES, index=default_index, key=f'edit_mode_{selected_id}')
-                st.markdown("</div>", unsafe_allow_html=True)
-            # Calculate based on payment mode
-            if new_mode == 'All to Company (MoMo/Bank)':
-                company_gets = 0.0
-                rider_gets = new_fee + new_tip
-            elif new_mode == 'All to Rider (Cash)':
-                company_gets = new_cost
-                rider_gets = 0.0
-            elif new_mode == 'Split: Item to Company, Delivery+Tip to Rider':
-                company_gets = 0.0
-                rider_gets = 0.0
-            else:
-                company_gets = 0.0
-                rider_gets = 0.0
-            st.markdown("---")
-            btn_col1, btn_col2, btn_col3 = st.columns([1, 1, 2])
-            with btn_col1:
-                if st.button("✅ Update Record", type="primary", use_container_width=True):
-                    update_data = {
-                        "location": new_loc,
-                        "cost_of_item": new_cost,
-                        "delivery_fee": new_fee,
-                        "tip": new_tip,
-                        "payment_mode": new_mode,
-                        "company_gets": company_gets,
-                        "rider_gets": rider_gets
-                    }
-                    response = supabase.table("sales").update(update_data).eq("id", int(selected_id)).execute()
-                    if response.data:
-                        st.success("✅ Record updated successfully!")
-                        st.rerun()
-                    else:
-                        st.error("❌ Failed to update record.")
-                        st.write(response)
-            with btn_col2:
-                if st.button("🗑️ Delete Record", type="secondary", use_container_width=True):
-                    response = supabase.table("sales").delete().eq("id", int(selected_id)).execute()
-                    if response.data:
-                        st.success("🗑️ Record deleted successfully!")
-                        st.rerun()
-                    else:
-                        st.error("❌ Failed to delete record.")
-                        st.write(response)
-        else:
-            st.info("ℹ️ Please enter a valid Sale ID from the filtered records above to edit or delete.")
+                    st.error("❌ Failed to update record.")
+                    st.write(resp)
+        with b2:
+            if st.button("🗑️ Delete Record", type="secondary", use_container_width=True):
+                resp = delete_sale_db(int(selected_id))
+                if resp.data:
+                    st.success("🗑️ Record deleted successfully!")
+                    fetch_sales_from_db.clear()
+                    st.experimental_rerun()
+                else:
+                    st.error("❌ Failed to delete record.")
+                    st.write(resp)
