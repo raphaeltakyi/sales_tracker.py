@@ -344,11 +344,11 @@ else:
                         <div style='font-weight: 600; font-size: 1.1rem; margin-bottom: 1rem;'>
                             🚴 {rider_name}
                         </div>
-                        <div style='font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.5rem;'>Deliveries: <strong>{data['deliveries']}</strong></div>
-                        <div style='font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.5rem;'>Delivery Fees: <strong>₵{data['delivery_fees']:,.2f}</strong></div>
-                        <div style='font-size: 0.9rem; opacity: 0.9; margin-bottom: 1rem;'>Tips: <strong>₵{data['tips']:,.2f}</strong></div>
+                        <div style='font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.5rem;'>No. of Deliveries: <strong>{data['deliveries']}</strong></div>
+                        <div style='font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.5rem;'>Total Delivery Fees: <strong>₵{data['delivery_fees']:,.2f}</strong></div>
+                        <div style='font-size: 0.9rem; opacity: 0.9; margin-bottom: 1rem;'>Total Tips: <strong>₵{data['tips']:,.2f}</strong></div>
                         <div style='border-top: 1px solid rgba(255,255,255,0.3); padding-top: 1rem;'>
-                            <div style='font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.3rem;'>Total Earnings</div>
+                            <div style='font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.3rem;'>Companies Owes Rider</div>
                             <div style='font-size: 1.8rem; font-weight: 700;'>₵{data['earnings']:,.2f}</div>
                         </div>
                     </div>
