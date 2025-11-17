@@ -44,6 +44,68 @@ st.markdown(
         color: #4B6EAF !important;
         font-size: 0.95rem !important;
     }
+    
+    .summary-header {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        padding: 0.3rem;
+        border-radius: 10px;
+        margin: 1rem 0;
+    }
+    
+    .summary-header h3 {
+        color: white;
+        margin: 0;
+        font-family: Arial, sans-serif;
+        text-align: center;
+    }
+    
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .summary-card {
+        background: #f8f9fa;
+        border-left: 4px solid #667eea;
+        padding: 1.2rem;
+        border-radius: 6px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .summary-card.prince {
+        border-left-color: #667eea;
+    }
+    
+    .summary-card.justice {
+        border-left-color: #764ba2;
+    }
+    
+    .summary-card.company {
+        border-left-color: #43e97b;
+    }
+    
+    .summary-label {
+        font-size: 0.85rem;
+        color: #666;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+    }
+    
+    .summary-value {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #333;
+    }
+    
+    .summary-meta {
+        font-size: 0.75rem;
+        color: #999;
+        margin-top: 0.5rem;
+    }
     </style>
     """,
     unsafe_allow_html=True
@@ -155,7 +217,7 @@ if submitted:
         st.success("✅ Sale added successfully!")
     else:
         st.error("❌ Failed to add sale.")
-        st.write(response)  # Optional for debugging
+        st.write(response)
 
 
 # --- Fetch all sales ---
@@ -219,146 +281,46 @@ else:
             st.dataframe(filtered_display.reset_index(drop=True), use_container_width=True, height=300)
 
 
-        st.markdown(
-            """
-            <div style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
-                        padding: 0.3rem; border-radius: 10px; margin: 1rem 0;'>
-                <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
-                    💹 Overall Summary Statistics
-                </h3>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-        st.markdown(
-            """
-            <style>
-            .metric-container { display: flex; gap: 10px; margin-bottom: 10px; }
-            .metric-card {
-                flex: 1;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                padding: 1.5rem;
-                border-radius: 8px;
-                color: white;
-                text-align: center;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            }
-            .metric-card:nth-child(2) { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-            .metric-card:nth-child(3) { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-            .metric-card:nth-child(4) { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-            .metric-card:nth-child(5) { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-            .metric-label { font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem; font-weight: 600; }
-            .metric-value { font-size: 1.8rem; font-weight: 700; }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
-
-
-        # ---- Overall Summary Cards ----
-        col_sum1, col_sum2, col_sum3, col_sum4, col_sum5 = st.columns(5)
-        with col_sum1:
-            st.markdown(
-                f"""
-                <div class='metric-card'>
-                    <div class='metric-label'>🚚 Delivery Fees</div>
-                    <div class='metric-value'>₵{filtered['delivery_fee'].sum():,.2f}</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-        with col_sum2:
-            st.markdown(
-                f"""
-                <div class='metric-card'>
-                    <div class='metric-label'>💰 Item Cost</div>
-                    <div class='metric-value'>₵{filtered['cost_of_item'].sum():,.2f}</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-        with col_sum3:
-            st.markdown(
-                f"""
-                <div class='metric-card'>
-                    <div class='metric-label'>💵 Tips</div>
-                    <div class='metric-value'>₵{filtered['tip'].sum():,.2f}</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-        with col_sum4:
-            st.markdown(
-                f"""
-                <div class='metric-card'>
-                    <div class='metric-label'>🏢 Company</div>
-                    <div class='metric-value'>₵{filtered['company_gets'].sum():,.2f}</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-        with col_sum5:
-            st.markdown(
-                f"""
-                <div class='metric-card'>
-                    <div class='metric-label'>🚴 Total Riders</div>
-                    <div class='metric-value'>₵{(filtered['prince_gets'].sum() + filtered['justice_gets'].sum()):,.2f}</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-
-        # ---- Per-Rider Summary Statistics ----
-        st.markdown(
-            """
-            <div style='background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); 
-                        padding: 0.3rem; border-radius: 10px; margin: 1.5rem 0 1rem 0;'>
-                <h3 style='color: white; margin: 0; font-family: Arial, sans-serif; text-align: center;'>
-                    🚴 Rider-Specific Summary
-                </h3>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-        # Prince's Performance
-        prince_total = filtered['prince_gets'].sum()
-        prince_transactions = len(filtered[filtered['prince_gets'] > 0])
-        prince_avg = filtered[filtered['prince_gets'] > 0]['prince_gets'].mean() if prince_transactions > 0 else 0
-        prince_tips = filtered['tip'].sum() if prince_total > 0 else 0
+        # ---- Compact Summary Section ----
+        st.markdown('<div class="summary-header"><h3>💰 Settlement Summary</h3></div>', unsafe_allow_html=True)
         
-        st.markdown("#### 👤 Prince's Performance")
-        prince_col1, prince_col2, prince_col3, prince_col4 = st.columns(4)
-        with prince_col1:
-            st.metric(label="🚚 Deliveries", value=f"{prince_transactions}")
-        with prince_col2:
-            st.metric(label="💰 Total Earned", value=f"₵{prince_total:,.2f}")
-        with prince_col3:
-            st.metric(label="📊 Avg per Delivery", value=f"₵{prince_avg:,.2f}")
-        with prince_col4:
-            prince_tip_total = filtered[filtered['prince_gets'] > 0]['tip'].sum()
-            st.metric(label="💵 Tips Received", value=f"₵{prince_tip_total:,.2f}")
+        col1, col2, col3 = st.columns(3)
         
-        st.markdown("---")
-
-        # Justice's Performance
-        justice_total = filtered['justice_gets'].sum()
-        justice_transactions = len(filtered[filtered['justice_gets'] > 0])
-        justice_avg = filtered[filtered['justice_gets'] > 0]['justice_gets'].mean() if justice_transactions > 0 else 0
-        justice_tips = filtered['tip'].sum() if justice_total > 0 else 0
+        with col1:
+            st.markdown(
+                f"""
+                <div class="summary-card company">
+                    <div class="summary-label">🏢 Company</div>
+                    <div class="summary-value">₵{filtered['company_gets'].sum():,.2f}</div>
+                    <div class="summary-meta">{len(filtered[filtered['company_gets'] > 0])} transactions</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         
-        st.markdown("#### 👤 Justice's Performance")
-        justice_col1, justice_col2, justice_col3, justice_col4 = st.columns(4)
-        with justice_col1:
-            st.metric(label="🚚 Deliveries", value=f"{justice_transactions}")
-        with justice_col2:
-            st.metric(label="💰 Total Earned", value=f"₵{justice_total:,.2f}")
-        with justice_col3:
-            st.metric(label="📊 Avg per Delivery", value=f"₵{justice_avg:,.2f}")
-        with justice_col4:
-            justice_tip_total = filtered[filtered['justice_gets'] > 0]['tip'].sum()
-            st.metric(label="💵 Tips Received", value=f"₵{justice_tip_total:,.2f}")
+        with col2:
+            st.markdown(
+                f"""
+                <div class="summary-card prince">
+                    <div class="summary-label">👤 Prince</div>
+                    <div class="summary-value">₵{filtered['prince_gets'].sum():,.2f}</div>
+                    <div class="summary-meta">{len(filtered[filtered['prince_gets'] > 0])} deliveries</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        
+        with col3:
+            st.markdown(
+                f"""
+                <div class="summary-card justice">
+                    <div class="summary-label">👤 Justice</div>
+                    <div class="summary-value">₵{filtered['justice_gets'].sum():,.2f}</div>
+                    <div class="summary-meta">{len(filtered[filtered['justice_gets'] > 0])} deliveries</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
     else:
         st.warning("⚠️ No records for selected filter combination.")
