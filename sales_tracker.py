@@ -105,7 +105,7 @@ with st.form("sale_form", clear_on_submit=True):
             cost = st.number_input("💰 Cost of Item", min_value=0.0, format='%.2f', step=0.01)
             fee = st.number_input("🚚 Delivery Fee", min_value=0.0, format='%.2f', step=0.01)
             tip = st.number_input("💵 Tip", min_value=0.0, format='%.2f', step=0.01)
-            rider = st.radio("🚴 Rider", RIDERS)
+            rider = st.radio("🚴 Rider", RIDERS, horizontal=True)
     col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
     with col_btn2:
         submitted = st.form_submit_button("✅ Add Sale", use_container_width=True, type="primary")
