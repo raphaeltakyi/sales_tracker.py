@@ -361,10 +361,10 @@ else:
             rider_summary_df = pd.DataFrame([
                 {
                     'Rider': rider_name,
-                    'Deliveries': data['deliveries'],
-                    'Delivery Fees': f"₵{data['delivery_fees']:,.2f}",
-                    'Tips': f"₵{data['tips']:,.2f}",
-                    'Total Earnings': f"₵{data['earnings']:,.2f}"
+                    'No. of Deliveries': data['deliveries'],
+                    'Total Delivery Fees': f"₵{data['delivery_fees']:,.2f}",
+                    'Total Tips': f"₵{data['tips']:,.2f}",
+                    'Company Owes Rider': f"₵{data['earnings']:,.2f}"
                 }
                 for rider_name, data in rider_summary.items()
             ])
