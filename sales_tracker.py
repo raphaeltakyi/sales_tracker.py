@@ -76,7 +76,7 @@ PAYMENT_CHOICES = [
     'Split: Item to Company, Delivery+Tip to Rider'
 ]
 
-RIDERS = ['Prince', 'Justice']
+RIDERS = ['Bless', 'other']
 
 
 # --- Add a sale form with modern styling ---
